@@ -1,8 +1,10 @@
-# Plan - stage 3 init mlflow
+# Plan - stage 4 track model training
 
 ## Goal
 
-- init mlflow in sagemaker
+- enable tracking in sagemaker
+- train and track model with train-mlflow.ipynb
+- output model in s3 trains/models
 
 ---
 
@@ -15,6 +17,7 @@
 
 ## Phases
 
-| #   | Phase                  |
-| --- | ---------------------- |
-| 1   | create mlflow in infra |
+| #   | Phase                      |
+| --- | -------------------------- |
+| 1   | rewrite train-mlflow.ipynb |
+| 2   | train and track the model  |

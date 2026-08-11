@@ -168,6 +168,30 @@ def compare_runs(experiment_name: str, metrics: list[str] | None = None):
     return table
 
 
-def tracking_uri() -> str:
-    """Gat tracking URI."""
-    return os.environ.get("MLFLOW_TRACKING_URI") or mlflow.get_tracking_uri()
+def tracking_uri(name_prefix: str = "sagemaker-yolo") -> str:
+    """
+    Tracking URI.
+
+    On SageMaker the URI is the MLflow app ARN, which carries an AWS-generated
+    suffix -- so it is looked up rather than hardcoded. MLFLOW_TRACKING_URI
+    wins if set.
+    """
+    uri = os.environ.get("MLFLOW_TRACKING_URI")
+    if uri:
+        return uri
+
+    import boto3
+
+    client = boto3.client("sagemaker")
+    response = client.list_mlflow_apps()
+
+    # the summaries key has varied across botocore versions; take the list
+    summaries = next(v for v in response.values() if isinstance(v, list))
+
+    for app in summaries:
+        name = app.get("Name") or app.get("MlflowAppName", "")
+        arn = app.get("Arn") or app.get("MlflowAppArn")
+        if name.startswith(name_prefix):
+            return arn
+
+    raise RuntimeError(f"no MLflow app starting with {name_prefix!r}: {summaries}")
