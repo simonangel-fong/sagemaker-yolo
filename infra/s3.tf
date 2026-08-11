@@ -10,11 +10,13 @@
 locals {
   bucket_name = "${local.prefix_name}-${random_string.suffix.result}"
   bucket_prefix = [
-    "data/",       # ml data
-    "data/raw/",   # raw data export from data warehouse
-    "data/split/", # split data for ml
-    "trains/",     # training artifacts
-    "inference/",  # training artifacts
+    "data/",            # ml data
+    "data/raw/",        # raw data export from data warehouse
+    "data/split/",      # split data for ml
+    "trains/",          # training artifacts
+    "trains/models",    # training models
+    "inference/",       # inference artifacts
+    "inference/models", # inference models
   ]
 }
 

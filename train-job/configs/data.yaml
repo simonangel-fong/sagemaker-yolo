@@ -1,5 +1,0 @@
-path: /workspace/data/processed
-train: train/images
-val: val/images
-nc: 1
-names: ['car_plate']
