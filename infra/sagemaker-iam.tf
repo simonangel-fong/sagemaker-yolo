@@ -29,3 +29,45 @@ resource "aws_iam_role_policy_attachment" "bucket_full" {
   role       = aws_iam_role.sagemaker_execution.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
+
+# ##############################
+# IAM: MLflow access
+# ##############################
+# sagemaker-mlflow:* is a separate service prefix from sagemaker:*, so
+# AmazonSageMakerFullAccess does not cover it. Without this the notebook gets
+# 403 on every tracking call.
+data "aws_iam_policy_document" "mlflow_access" {
+  statement {
+    sid    = "MlflowTracking"
+    effect = "Allow"
+
+    actions = ["sagemaker-mlflow:*"]
+
+    resources = [aws_sagemaker_mlflow_tracking_server.yolo.arn]
+  }
+
+  # Presigned UI URLs and server lookup are sagemaker:*, not sagemaker-mlflow:*.
+  statement {
+    sid    = "MlflowServerAccess"
+    effect = "Allow"
+
+    actions = [
+      "sagemaker:CreatePresignedMlflowTrackingServerUrl",
+      "sagemaker:DescribeMlflowTrackingServer",
+      "sagemaker:ListMlflowTrackingServers",
+    ]
+
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "mlflow_access" {
+  name        = "${local.prefix_name}-mlflow-access"
+  description = "Studio execution role access to the MLflow tracking server."
+  policy      = data.aws_iam_policy_document.mlflow_access.json
+}
+
+resource "aws_iam_role_policy_attachment" "mlflow_access" {
+  role       = aws_iam_role.sagemaker_execution.name
+  policy_arn = aws_iam_policy.mlflow_access.arn
+}
