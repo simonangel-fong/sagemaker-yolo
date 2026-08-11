@@ -10,7 +10,8 @@ resource "aws_sagemaker_studio_lifecycle_config" "clone_repo" {
   # init notebook instance
   studio_lifecycle_config_content = base64encode(
     templatefile("${path.module}/scripts/notebook-init.sh", {
-      repo_url = var.git_repository_url
+      repo_url    = var.git_repository_url
+      bucket_name = aws_s3_bucket.yolo.id
     })
   )
 }

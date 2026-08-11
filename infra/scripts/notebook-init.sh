@@ -6,8 +6,17 @@ set -eux
 
 # github repo rule
 REPO_URL="${repo_url}"
+# project s3 bucket
+BUCKET="${bucket_name}"
 # clone dir
 REPO_DIR="/home/sagemaker-user/$(basename "$REPO_URL" .git)"
+
+# Expose the bucket to notebook kernels. The bucket name carries a random
+# terraform suffix, so the notebook reads it from the environment rather than
+# hardcoding it. Written as a .env file that the notebook loads explicitly,
+# since Jupyter kernels do not source the login shell.
+echo "BUCKET=$BUCKET" > /home/sagemaker-user/.sagemaker-yolo.env
+echo "wrote BUCKET=$BUCKET to /home/sagemaker-user/.sagemaker-yolo.env"
 
 if [ -d "$REPO_DIR/.git" ]; then
     echo "repo already present at $REPO_DIR, skipping clone"
