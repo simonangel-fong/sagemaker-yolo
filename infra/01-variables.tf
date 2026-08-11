@@ -47,14 +47,13 @@ variable "public_subnet_ids" {
 }
 
 
-
 # ##############################
 # Space: Notebook
 # ##############################
 variable "notebook_instance_type" {
   description = "Default instance type for the JupyterLab app in a space."
   type        = string
-  default     = "ml.t3.medium"
+  default     = "ml.t3.xlarge"
 }
 
 variable "notebook_volume_size" {
