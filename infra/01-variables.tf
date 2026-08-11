@@ -66,3 +66,23 @@ variable "notebook_volume_size" {
     error_message = "space_volume_size must be between 5 and 16384 GB."
   }
 }
+
+# ##############################
+# MLflow
+# ##############################
+variable "mlflow_tracking_server_size" {
+  description = "Tracking server size. Small is the cheapest."
+  type        = string
+  default     = "Small"
+
+  validation {
+    condition     = contains(["Small", "Medium", "Large"], var.mlflow_tracking_server_size)
+    error_message = "mlflow_tracking_server_size must be Small, Medium or Large."
+  }
+}
+
+variable "mlflow_version" {
+  description = "MLflow version the tracking server runs."
+  type        = string
+  default     = "3.0"
+}

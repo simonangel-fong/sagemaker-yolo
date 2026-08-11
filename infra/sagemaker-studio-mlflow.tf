@@ -6,7 +6,7 @@ locals {
 
 
 # ##############################
-# MLflow app role
+# MLflow tracking server role
 # ##############################
 resource "aws_iam_role" "mlflow" {
   name = "${local.prefix_name}-role-mlflow"
@@ -86,7 +86,7 @@ data "aws_iam_policy_document" "mlflow_artifacts" {
 
 resource "aws_iam_policy" "mlflow_artifacts" {
   name        = "${local.prefix_name}-mlflow-artifacts"
-  description = "MLflow app access to the artifact store."
+  description = "MLflow tracking server access to the artifact store."
   policy      = data.aws_iam_policy_document.mlflow_artifacts.json
 }
 
@@ -96,12 +96,20 @@ resource "aws_iam_role_policy_attachment" "mlflow_artifacts" {
 }
 
 # ##############################
-# MLflow app
+# MLflow tracking server
 # ##############################
-resource "aws_sagemaker_mlflow_app" "yolo" {
-  name                   = local.prefix_name
-  default_domain_id_list = [aws_sagemaker_domain.yolo.id]
-  role_arn               = aws_iam_role.mlflow.arn
+resource "aws_sagemaker_mlflow_tracking_server" "yolo" {
+  tracking_server_name = local.prefix_name
+  role_arn             = aws_iam_role.mlflow.arn
 
   artifact_store_uri = "s3://${aws_s3_bucket.yolo.id}/${local.mlflow_prefix}/"
+
+  # Small is the cheapest size; enough for a single-user project.
+  tracking_server_size = var.mlflow_tracking_server_size
+  mlflow_version       = var.mlflow_version
+
+  # Let mlflow.register_model() write to the SageMaker model registry.
+  automatic_model_registration = true
+
+  weekly_maintenance_window_start = "Sun:03:00"
 }

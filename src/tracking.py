@@ -172,9 +172,9 @@ def tracking_uri(name_prefix: str = "sagemaker-yolo") -> str:
     """
     Tracking URI.
 
-    On SageMaker the URI is the MLflow app ARN, which carries an AWS-generated
-    suffix -- so it is looked up rather than hardcoded. MLFLOW_TRACKING_URI
-    wins if set.
+    On SageMaker the URI is the MLflow tracking server ARN, looked up by name
+    so the account id and region do not have to be hardcoded.
+    MLFLOW_TRACKING_URI wins if set.
     """
     uri = os.environ.get("MLFLOW_TRACKING_URI")
     if uri:
@@ -182,16 +182,15 @@ def tracking_uri(name_prefix: str = "sagemaker-yolo") -> str:
 
     import boto3
 
-    client = boto3.client("sagemaker")
-    response = client.list_mlflow_apps()
+    servers = boto3.client("sagemaker").list_mlflow_tracking_servers()[
+        "TrackingServerSummaries"
+    ]
 
-    # the summaries key has varied across botocore versions; take the list
-    summaries = next(v for v in response.values() if isinstance(v, list))
+    for server in servers:
+        if server["TrackingServerName"].startswith(name_prefix):
+            return server["TrackingServerArn"]
 
-    for app in summaries:
-        name = app.get("Name") or app.get("MlflowAppName", "")
-        arn = app.get("Arn") or app.get("MlflowAppArn")
-        if name.startswith(name_prefix):
-            return arn
-
-    raise RuntimeError(f"no MLflow app starting with {name_prefix!r}: {summaries}")
+    raise RuntimeError(
+        f"no MLflow tracking server starting with {name_prefix!r}; "
+        f"found {[s['TrackingServerName'] for s in servers]}"
+    )
