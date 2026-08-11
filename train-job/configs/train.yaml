@@ -1,0 +1,13 @@
+# Training hyperparameters(local, CPU).
+
+model: yolo11n.pt
+epochs: 10
+imgsz: 640
+batch: 8
+device: cpu
+workers: 4
+seed: 0
+
+project: runs
+name: local-train
+exist_ok: true

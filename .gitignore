@@ -14,8 +14,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -73,7 +73,7 @@ docs/_build/
 
 # PyBuilder
 .pybuilder/
-target/
+/target/
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -151,7 +151,7 @@ activemq-data/
 .env
 .envrc
 .venv
-env/
+/env/
 venv/
 ENV/
 env.bak/
@@ -216,3 +216,19 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# data
+data/raw/
+data/processed/
+data/interim/
+
+# model weights / exports
+*.pt
+*.pth
+*.onnx
+*.engine
+*.tflite
+
+# training runs
+runs/
+wandb/

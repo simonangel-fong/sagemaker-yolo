@@ -6,4 +6,18 @@ terraform -chdir=infra plan
 
 terraform -chdir=infra apply -auto-approve
 terraform -chdir=infra destroy -auto-approve
+
+terraform -chdir=infra refresh
+terraform -chdir=infra output
+```
+
+```sh
+terraform -chdir=infra output -raw s3_sync_command
+# aws s3 sync data/raw s3://sagemaker-yolo-dev-vh4wix/data/raw
+
+# sync raw data
+aws s3 sync data/raw s3://sagemaker-yolo-dev-vh4wix/data/raw
+
+# remove a folder
+aws s3 rm s3://sagemaker-yolo-dev-vh4wix/data/raw --recursive
 ```

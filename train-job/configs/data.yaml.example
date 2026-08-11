@@ -1,0 +1,13 @@
+# Dataset descriptor for Ultralytics. Copy to data.yaml and set `path`, or let
+# the notebook generate it via src.data_loader.write_data_yaml().
+#
+# `path` must be ABSOLUTE. Ultralytics resolves a relative dataset root against
+# the process working directory, then falls back to its own DATASETS_DIR --
+# never against this file's location. The notebook runs from notebooks/, so a
+# relative path would not resolve.
+
+path: /absolute/path/to/repo/data/processed
+train: train/images
+val: val/images
+nc: 1
+names: ['car_plate']
