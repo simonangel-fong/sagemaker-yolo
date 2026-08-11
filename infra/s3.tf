@@ -14,7 +14,7 @@ locals {
     "data/raw/",   # raw data export from data warehouse
     "data/split/", # split data for ml
     "trains/",     # training artifacts
-    "inference/",     # training artifacts
+    "inference/",  # training artifacts
   ]
 }
 
