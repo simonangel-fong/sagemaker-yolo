@@ -222,6 +222,9 @@ data/raw/
 data/processed/
 data/interim/
 
+# generated dataset descriptor (see write_data_yaml in src/data_loader.py)
+configs/
+
 # model weights / exports
 *.pt
 *.pth

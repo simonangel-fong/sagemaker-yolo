@@ -161,6 +161,35 @@ def verify_split(out_dir: Path) -> dict[str, int]:
     return counts
 
 
+def build_train_cfg(device: str | int = "cpu", workers: int = 2, **overrides) -> dict:
+    """
+    Training hyperparameters, as a dict.
+
+    Generated rather than checked in, so `device`/`workers` follow the runtime
+    and later stages can override any key:
+
+        build_train_cfg(device=0, epochs=50)              # notebook
+        {**build_train_cfg(), **trial}                    # hyperparameter sweep
+
+    Pairs with `run_sweep(base_cfg=...)` in src/tracking.py.
+    """
+    cfg = {
+        # yolo11n is the smallest variant, which matters without a GPU
+        "model": "yolo11n.pt",
+        "epochs": 10,
+        "imgsz": 640,
+        "batch": 8,
+        "device": device,
+        "workers": workers,
+        "seed": 0,
+        "project": "runs",
+        "name": "sagemaker-train",
+        "exist_ok": True,
+    }
+    cfg.update(overrides)
+    return cfg
+
+
 def write_data_yaml(path: Path, processed_dir: Path, names: list[str]) -> Path:
     """
     Write the dataset configuration file.

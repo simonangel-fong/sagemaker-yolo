@@ -4,7 +4,7 @@
 # Space: jupyterlab
 # ##############################
 resource "aws_sagemaker_space" "notebook" {
-  space_name = "admin-alice-jupyterlab"
+  space_name = "${local.prefix_name}-jupyterlab-admin"
   domain_id  = aws_sagemaker_domain.yolo.id
 
   space_sharing_settings {
