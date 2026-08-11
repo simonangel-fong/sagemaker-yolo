@@ -8,6 +8,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "6.58.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 
   backend "s3" {}
@@ -20,3 +24,5 @@ provider "aws" {
     tags = local.default_tags
   }
 }
+
+data "aws_caller_identity" "current" {}
