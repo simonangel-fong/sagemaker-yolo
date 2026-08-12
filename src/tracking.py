@@ -123,6 +123,34 @@ def run_sweep(
     return results
 
 
+def register_model(
+    run_id: str,
+    onnx_path: Path,
+    name: str,
+    alias: str | None = None,
+    model_name: str = "model",
+) -> object:
+    """
+    Log an ONNX file as an MLflow model on `run_id` and register it.
+    """
+    # mlflow.onnx needs onnxruntime at log time, to validate session options
+    import onnx
+
+    # log_model must run inside the run that produced the weights
+    with mlflow.start_run(run_id=run_id):
+        info = mlflow.onnx.log_model(
+            onnx_model=onnx.load(str(onnx_path)),
+            name=model_name,
+            registered_model_name=name,
+        )
+
+    version = info.registered_model_version
+    if alias:
+        mlflow.MlflowClient().set_registered_model_alias(name, alias, version)
+
+    return info
+
+
 def latest_run_id(experiment_name: str) -> str | None:
     """Most recent run in an experiment, so a finished run can be reopened."""
     # get experiment
