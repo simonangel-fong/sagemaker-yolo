@@ -123,18 +123,88 @@ def run_sweep(
     return results
 
 
+METRIC_KEY = "metrics/mAP50-95B"
+
+# Floor is set from the run history: real 445-image runs land at 0.779-0.814,
+MIN_MAP = 0.70
+
+PROMOTION_MARGIN = 0.01
+
+
+def check_export_parity(
+    onnx_path: Path,
+    data_yaml: Path,
+    reference_map: float,
+    tolerance: float = 0.01,
+    imgsz: int = 640,
+) -> dict:
+    """
+    Score the exported ONNX and compare it against the .pt metric.
+
+    The gates run on metrics produced by the PyTorch weights, but what actually
+    ships is the ONNX. `opset`/`simplify` can change numerics and still emit a
+    file that loads cleanly, so the two are compared before anything registers.
+    """
+    from ultralytics import YOLO
+
+    metrics = YOLO(str(onnx_path)).val(data=str(data_yaml), imgsz=imgsz, verbose=False)
+    onnx_map = metrics.results_dict["metrics/mAP50-95(B)"]
+    delta = abs(onnx_map - reference_map)
+
+    return {
+        "passed": delta <= tolerance,
+        "onnx_map": onnx_map,
+        "reference_map": reference_map,
+        "delta": delta,
+        "tolerance": tolerance,
+    }
+
+
 def register_model(
     run_id: str,
     onnx_path: Path,
     name: str,
-    alias: str | None = None,
+    min_map: float = MIN_MAP,
+    margin: float = PROMOTION_MARGIN,
+    parity: dict | None = None,
+    alias: str = "champion",
     model_name: str = "model",
-) -> object:
+) -> dict:
     """
-    Log an ONNX file as an MLflow model on `run_id` and register it.
+    Gate a trained run, register it, and promote it only if it wins.
+
+    Order is floor -> parity -> register -> promote. A run that fails a gate is
+    tagged with the reason and left unregistered, so the failure is visible in
+    the UI without cluttering the registry with unusable versions.
+
+    Promotion is decided here rather than by the caller, so every notebook goes
+    through the same rule and a short debug run cannot take the alias from a
+    better model.
     """
     # mlflow.onnx needs onnxruntime at log time, to validate session options
     import onnx
+
+    client = mlflow.MlflowClient()
+    score = client.get_run(run_id).data.metrics.get(METRIC_KEY)
+    result: dict[str, object] = {"run_id": run_id, "score": score}
+
+    def reject(reason: str) -> dict:
+        client.set_tag(run_id, "gate.passed", "false")
+        client.set_tag(run_id, "gate.reason", reason)
+        return {**result, "registered": False, "promoted": False, "reason": reason}
+
+    # floor: catches a collapsed run, a truncated download, a smoke run
+    if score is None:
+        return reject(f"no {METRIC_KEY} logged on the run")
+    if score < min_map:
+        return reject(f"mAP50-95 {score:.4f} below floor {min_map}")
+
+    # parity: catches an export that silently diverged from the weights
+    if parity is not None and not parity["passed"]:
+        return reject(
+            f"onnx/pt mAP differ by {parity['delta']:.4f} "
+            f"(tolerance {parity['tolerance']})"
+        )
 
     # log_model must run inside the run that produced the weights
     with mlflow.start_run(run_id=run_id):
@@ -145,10 +215,37 @@ def register_model(
         )
 
     version = info.registered_model_version
-    if alias:
-        mlflow.MlflowClient().set_registered_model_alias(name, alias, version)
+    if version is None:
+        return reject("log_model did not return a registered version")
+    version = str(version)
 
-    return info
+    client.set_tag(run_id, "gate.passed", "true")
+    result.update({"registered": True, "version": version, "info": info})
+
+    # promote only on a clear win, so run-to-run noise cannot move the alias
+    try:
+        champion = client.get_model_version_by_alias(name, alias)
+        # a version whose run was deleted cannot be scored, so it loses
+        champion_score = (
+            client.get_run(champion.run_id).data.metrics.get(METRIC_KEY, float("-inf"))
+            if champion.run_id
+            else float("-inf")
+        )
+    except Exception:  # no alias yet, this version takes it uncontested
+        champion, champion_score = None, float("-inf")
+
+    if score > champion_score + margin:
+        client.set_registered_model_alias(name, alias, version)
+        return {**result, "promoted": True, "champion_score": champion_score,
+                "previous_version": champion.version if champion else None}
+
+    return {
+        **result,
+        "promoted": False,
+        "champion_score": champion_score,
+        "champion_version": champion.version if champion else None,
+        "reason": f"did not beat champion {champion_score:.4f} by {margin}",
+    }
 
 
 def latest_run_id(experiment_name: str) -> str | None:
