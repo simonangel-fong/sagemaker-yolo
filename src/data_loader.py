@@ -100,11 +100,18 @@ def build_split(
     val_fraction: float = 0.2,
     limit: int | None = None,
     seed: int = 0,
+    reset: bool = True,
 ) -> dict[str, int]:
     """
     Copy paired files into out_dir/{train,val}/{images,labels}.
 
     rebuilt with a different seed and data/raw stays intact.
+
+    `reset` removes out_dir first, so a re-split under a different seed cannot
+    leave the previous partition behind. Pass reset=False when out_dir is a
+    mount point -- SageMaker bind-mounts the processing output directories, and
+    rmdir on a mount fails with "Device or resource busy". Callers doing that
+    are responsible for clearing the contents themselves.
     """
     pairs, orphan_images, orphan_labels = find_pairs(raw_dir)
     if not pairs:
@@ -119,7 +126,7 @@ def build_split(
     n_val = round(len(pairs) * val_fraction)
     splits = {"val": pairs[:n_val], "train": pairs[n_val:]}
 
-    if out_dir.exists():
+    if reset and out_dir.exists():
         shutil.rmtree(out_dir)  # delete dir tree
 
     for split, items in splits.items():

@@ -1,0 +1,6 @@
+# Installed inside the training container at job start.
+#
+# The PyTorch DLC already ships torch built against the image's CUDA version,
+# so torch is deliberately absent here -- letting pip resolve it would pull a
+# generic wheel over the tuned one.
+ultralytics>=8.3,<9

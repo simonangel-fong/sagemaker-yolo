@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -31,6 +32,18 @@ from src.data_loader import (
 )
 
 BASE = Path("/opt/ml/processing")
+
+
+def clear_dir(path: Path) -> None:
+    """
+    Empty a directory without removing the directory itself.
+
+    Keeps a re-run idempotent when `path` is a mount point, where rmtree on the
+    directory itself raises OSError "Device or resource busy".
+    """
+    path.mkdir(parents=True, exist_ok=True)
+    for child in path.iterdir():
+        shutil.rmtree(child) if child.is_dir() else child.unlink()
 
 
 def main() -> None:
@@ -67,12 +80,17 @@ def main() -> None:
             f"{stats['malformed'][:5]}"
         )
 
+    # split_dir is a bind mount here, so it cannot be removed and recreated --
+    # clear what is inside it instead and leave the mount itself alone
+    clear_dir(split_dir)
+
     counts = build_split(
         raw,
         split_dir,
         val_fraction=args.val_fraction,
         limit=limit,
         seed=args.seed,
+        reset=False,
     )
     verified = verify_split(split_dir)
     print(f"split        train {counts['train']}, val {counts['val']}")
