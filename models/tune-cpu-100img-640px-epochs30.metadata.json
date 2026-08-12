@@ -1,0 +1,30 @@
+{
+  "imgsz": 640,
+  "names": [
+    "car_plate"
+  ],
+  "metrics": {
+    "mAP50": 0.9415,
+    "mAP50-95": 0.7662
+  },
+  "mlflow": {
+    "run_id": "d33f3ab228fa4372963f340009e70885",
+    "experiment": "yolo-plate-detection-sweep",
+    "tracking_uri": "arn:aws:sagemaker:ca-central-1:099139718958:mlflow-tracking-server/sagemaker-yolo-dev"
+  },
+  "sweep": {
+    "axes": {
+      "epochs": [
+        10,
+        20,
+        30
+      ]
+    },
+    "won_with": {
+      "epochs": 30
+    },
+    "runs_compared": 3
+  },
+  "images": 100,
+  "exported_at": "2026-08-12T00:41:17.581686+00:00"
+}
