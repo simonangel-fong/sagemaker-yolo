@@ -1,10 +1,11 @@
-# Plan - stage 5. hyperparamter sweep
+# Plan - stage 6. gpu notebook server
 
 ## Goal
 
-- train model with mlflow hyperparameter
-- hyperparameter sweep with train-mlflow-sweep.ipynb
-- output model in s3 trains/models
+- create train-mlflow-sweep-cpu-vs-gpu.ipynb
+- sweep with cpu
+- switch notebook server with gpu
+- sweep with gpu
 
 ---
 
@@ -17,7 +18,9 @@
 
 ## Phases
 
-| #   | Phase                            |
-| --- | -------------------------------- |
-| 1   | rewrite train-mlflow-sweep.ipynb |
-| 2   | train and track the model        |
+| #   | Phase                                      |
+| --- | ------------------------------------------ |
+| 1   | create train-mlflow-sweep-cpu-vs-gpu.ipynb |
+| 2   | sweep with cpu                             |
+| 3   | switch notebook server with gpu            |
+| 4   | sweep with gpu                             |

@@ -34,3 +34,11 @@
 - hyperparameter sweep with train-mlflow-sweep.ipynb
 - output model in s3 trains/models
 
+---
+
+### 6. gpu notebook server
+
+- create train-mlflow-sweep-cpu-vs-gpu.ipynb
+- sweep with cpu
+- switch notebook server with gpu
+- sweep with gpu
