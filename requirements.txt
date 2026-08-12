@@ -1,0 +1,23 @@
+# Pipeline authoring dependencies (pipeline/run.py, pipeline/definition.py).
+#
+# Requires Python 3.9-3.12. Python 3.13+ has no numpy/pyiceberg wheels yet and
+# will try to build them from source, which needs a C++ toolchain.
+#
+#   py -3.12 -m venv .venv
+#   .venv/Scripts/activate        # Windows;  source .venv/bin/activate on Linux
+#   pip install -r requirements.txt
+#
+# sagemaker>=3 is required, not just preferred: the v2 layout (sagemaker.workflow,
+# sagemaker.processing) was replaced by sagemaker.core.* / sagemaker.mlops.*, and
+# the notebooks import sagemaker.core.helper.session_helper as well.
+sagemaker>=3.19,<4
+boto3>=1.43
+
+# Installing sagemaker pulls sagemaker-core / -mlops / -serve / -train as
+# dependencies. They ship on independent version numbers and must stay mutually
+# consistent -- a partial upgrade or an interrupted install leaves imports
+# broken in ways a plain reinstall will not fix (pip sees matching version
+# metadata and skips restoring the deleted files). Repair with:
+#
+#   pip install --force-reinstall --no-deps \
+#       sagemaker sagemaker-core sagemaker-mlops sagemaker-serve sagemaker-train

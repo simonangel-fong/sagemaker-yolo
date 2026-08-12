@@ -6,7 +6,7 @@ locals {
 
 
 # ##############################
-# MLflow tracking server role
+# IAM rolw: MLflow tracking server role
 # ##############################
 resource "aws_iam_role" "mlflow" {
   name = "${local.prefix_name}-role-mlflow"
@@ -27,6 +27,8 @@ resource "aws_iam_role" "mlflow" {
 }
 
 data "aws_iam_policy_document" "mlflow_artifacts" {
+
+  # allow mlflow to access bucket.
   statement {
     sid    = "S3ListArtifactBucket"
     effect = "Allow"
@@ -52,6 +54,7 @@ data "aws_iam_policy_document" "mlflow_artifacts" {
     resources = ["${aws_s3_bucket.yolo.arn}/${local.mlflow_prefix}/*"]
   }
 
+  # allow mlflow for kms
   statement {
     sid    = "KmsUse"
     effect = "Allow"
@@ -67,6 +70,7 @@ data "aws_iam_policy_document" "mlflow_artifacts" {
     resources = [aws_kms_key.yolo.arn]
   }
 
+  # allow mlflow for model
   statement {
     sid    = "ModelRegistry"
     effect = "Allow"
@@ -104,11 +108,10 @@ resource "aws_sagemaker_mlflow_tracking_server" "yolo" {
 
   artifact_store_uri = "s3://${aws_s3_bucket.yolo.id}/${local.mlflow_prefix}/"
 
-  # Small is the cheapest size; enough for a single-user project.
   tracking_server_size = var.mlflow_tracking_server_size
   mlflow_version       = var.mlflow_version
 
-  # Let mlflow.register_model() write to the SageMaker model registry.
+  # enable mlflow register sagemaker model
   automatic_model_registration = true
 
   weekly_maintenance_window_start = "Sun:03:00"

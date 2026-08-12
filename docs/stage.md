@@ -21,7 +21,6 @@
 
 ### 4. track model training
 
-
 - enable tracking in sagemaker
 - train and track model with train-mlflow.ipynb
 - output model in s3 trains/models
@@ -36,12 +35,13 @@
 
 ---
 
-### 6. gpu notebook server
+### 6. gpu notebook server(hold)
 
 - create train-mlflow-sweep-cpu-vs-gpu.ipynb
-- sweep with cpu
-- switch notebook server with gpu
-- sweep with gpu
+- sweep with cpu and gpu
 
 ---
 
+### 7. pipeline
+
+- create pipeline with python sdk
