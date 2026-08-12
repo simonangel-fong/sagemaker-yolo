@@ -1,9 +1,9 @@
-# Plan - stage 4 track model training
+# Plan - stage 5. hyperparamter sweep
 
 ## Goal
 
-- enable tracking in sagemaker
-- train and track model with train-mlflow.ipynb
+- train model with mlflow hyperparameter
+- hyperparameter sweep with train-mlflow-sweep.ipynb
 - output model in s3 trains/models
 
 ---
@@ -17,7 +17,7 @@
 
 ## Phases
 
-| #   | Phase                      |
-| --- | -------------------------- |
-| 1   | rewrite train-mlflow.ipynb |
-| 2   | train and track the model  |
+| #   | Phase                            |
+| --- | -------------------------------- |
+| 1   | rewrite train-mlflow-sweep.ipynb |
+| 2   | train and track the model        |

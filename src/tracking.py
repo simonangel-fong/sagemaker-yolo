@@ -104,6 +104,9 @@ def run_sweep(
                 {
                     "name": name,
                     "run_id": run_id,
+                    # ultralytics picks save_dir itself, so record where the
+                    # weights actually landed rather than rebuilding the path
+                    "save_dir": str(trained.save_dir),
                     **overrides,
                     "mAP50": trained.results_dict["metrics/mAP50(B)"],
                     "mAP50-95": trained.results_dict["metrics/mAP50-95(B)"],

@@ -28,9 +28,9 @@
 
 ---
 
-### 5. hyperparamter tunning
+### 5. hyperparamter sweep
 
 - train model with mlflow hyperparameter
-- hyperparameter tunning with train-mlflow-hyperparam.ipynb
+- hyperparameter sweep with train-mlflow-sweep.ipynb
 - output model in s3 trains/models
 
