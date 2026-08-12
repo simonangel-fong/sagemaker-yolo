@@ -4,7 +4,7 @@
     "car_plate"
   ],
   "mlflow": {
-    "run_id": "303d668df5c54b5297ab40419fa2cadd",
+    "run_id": "40666e62ce8d47acb97abaa0e150578a",
     "experiment": "yolo-plate-detection",
     "tracking_uri": "arn:aws:sagemaker:ca-central-1:099139718958:mlflow-tracking-server/sagemaker-yolo-dev"
   },
@@ -14,6 +14,6 @@
     "batch": 8,
     "seed": 0
   },
-  "images": 556,
-  "exported_at": "2026-08-12T02:54:02.632296+00:00"
+  "images": 10,
+  "exported_at": "2026-08-12T02:25:18.466153+00:00"
 }
