@@ -84,3 +84,24 @@ and forces a re-run of that step and everything downstream.
   training cannot run in parallel with a notebook holding the same instance.
 - Authoring from Windows has several traps; see `_windows_fix.py` and run a
   dry-run before every execution.
+
+---
+
+iris.csv in S3
+     ↓
+ProcessingStep
+     ├── train.csv
+     └── validation.csv
+            ↓
+       TrainingStep
+            ↓
+       model.tar.gz
+            ↓
+     EvaluationStep
+            ↓
+      accuracy.json
+            ↓
+      ConditionStep
+      accuracy >= 0.90?
+          ↓ yes
+      Register model
