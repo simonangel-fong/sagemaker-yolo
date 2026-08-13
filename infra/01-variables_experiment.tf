@@ -39,7 +39,8 @@ variable "public_subnet_ids" {
 variable "notebook_instance_type" {
   description = "Default instance type for the JupyterLab app in a space."
   type        = string
-  default     = "ml.t3.xlarge"
+  # fast launch ml.t3.xlarge;GP CPU ml.c5.large; GPU-powered ml.g4dn.xlarge
+  default = "ml.t3.xlarge"
 }
 
 variable "notebook_volume_size" {

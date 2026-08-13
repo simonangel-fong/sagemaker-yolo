@@ -1,38 +1,16 @@
-# # outputs.tf
+# outputs-experiment.tf
 
-# # ##############################
-# # S3
-# # ##############################
-# output "s3_bucket_name" {
-#   value = aws_s3_bucket.yolo.id
-# }
+output "studio_login_command" {
+  description = "CLI command that returns a presigned Studio URL for alice."
+  value       = var.enable_experiment ? "aws sagemaker create-presigned-domain-url --domain-id ${aws_sagemaker_domain.yolo.id} --user-profile-name ${aws_sagemaker_user_profile.admin.user_profile_name} --region ${var.aws_region} --query AuthorizedUrl --output text" : null
+}
 
-# output "s3_sync_command" {
-#   value = "aws s3 sync data/raw s3://${aws_s3_bucket.yolo.id}/data/raw"
-# }
-
-# # ##############################
-# # Studio
-# # ##############################
-# output "studio_domain_role_arn" {
-#   value = aws_iam_role.sagemaker_execution.arn
-# }
-
-# output "studio_domain_id" {
-#   value = one(aws_sagemaker_domain.yolo[*].id)
-# }
-
-# output "studio_login_command" {
-#   description = "CLI command that returns a presigned Studio URL for alice."
-#   value       = var.enable_experiment ? "aws sagemaker create-presigned-domain-url --domain-id ${aws_sagemaker_domain.yolo[0].id} --user-profile-name ${aws_sagemaker_user_profile.admin[0].user_profile_name} --region ${var.aws_region} --query AuthorizedUrl --output text" : null
-# }
-
-# # ##############################
-# # Notebook
-# # ##############################
-# output "notebook_url" {
-#   value = one(aws_sagemaker_space.notebook[*].url)
-# }
+# ##############################
+# Notebook
+# ##############################
+output "notebook_url" {
+  value = one(aws_sagemaker_space.notebook[*].url)
+}
 
 # # ##############################
 # # MLflow

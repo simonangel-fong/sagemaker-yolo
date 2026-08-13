@@ -1,10 +1,9 @@
-# # sagemaker-studio-mlflow.tf
+# # sagemaker_mlflow_server.tf
+# # archived
 
 # locals {
 #   mlflow_prefix = "mlflow"
 # }
-
-
 
 # # ##############################
 # # IAM policy: MLflow access
