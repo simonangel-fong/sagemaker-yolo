@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YOLO car-plate detector</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+  <header>
+    <h1>Car plate detector</h1>
+    <span id="status" class="status">checking model…</span>
+  </header>
+
+  <section class="controls">
+    <label class="file">
+      <input type="file" id="file" accept="image/jpeg,image/png">
+      <span>Choose image</span>
+    </label>
+
+    <label class="slider">
+      confidence <output id="confOut">0.25</output>
+      <input type="range" id="conf" min="0.05" max="0.95" step="0.05" value="0.25">
+    </label>
+
+    <button id="detect" disabled>Detect</button>
+  </section>
+
+  <p id="message" class="message"></p>
+
+  <section class="stage">
+    <!-- image is drawn into the canvas, boxes on top of it -->
+    <canvas id="canvas"></canvas>
+  </section>
+
+  <section id="results" class="results" hidden>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>class</th>
+          <th>confidence</th>
+          <th>box (x1, y1, x2, y2)</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </section>
+
+  <script src="js/main.js"></script>
+</body>
+
+</html>

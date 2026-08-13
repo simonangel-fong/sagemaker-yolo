@@ -74,7 +74,9 @@ def resolve_data_yaml(config_dir: Path, split_dir: Path, dest: Path) -> Path:
     channel cannot silently train on the wrong directory.
     """
     cfg = yaml.safe_load((config_dir / "data.yaml").read_text())
-    cfg["path"] = str(split_dir)
+    # as_posix(), not str(): on a Windows author machine str() yields
+    # backslashes, which the Linux container cannot resolve
+    cfg["path"] = split_dir.as_posix()
 
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(yaml.safe_dump(cfg, sort_keys=False))

@@ -42,6 +42,14 @@
 
 ---
 
-### 7. pipeline
+### 7. pipeline(halt)
 
 - create pipeline with python sdk
+
+---
+
+### 8. deployment
+
+- create model in sagemaker
+- create inference endpoint serverless
+- test

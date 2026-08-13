@@ -34,9 +34,12 @@ def main() -> None:
     parser.add_argument("--param", action="append", default=[],
                         metavar="NAME=VALUE",
                         help="override a pipeline parameter; repeatable")
+    parser.add_argument("--training-instance", default="ml.m5.xlarge",
+                        help="training instance type; also selects the "
+                             "training image and CPU/GPU device")
     args = parser.parse_args()
 
-    pipeline = build_pipeline()
+    pipeline = build_pipeline(training_instance_type=args.training_instance)
 
     if args.dry_run:
         print(json.dumps(json.loads(pipeline.definition()), indent=2))

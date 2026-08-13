@@ -1,4 +1,8 @@
-# Stage 7. pipeline
+# Stage 8. deployment
+
+- create model in sagemaker
+- create inference endpoint serverless
+- test
 
 ## Goal
 
@@ -9,7 +13,12 @@
 ## Stack
 
 - aws sagemaker
-- sagemaker v3 python sdk
+- terraform
+- trained model:
+  - s3:sagemaker-yolo-dev-0luf20/trains/models/tune-cpu-556img-640px-epochs30/
+    - best.pt
+    - tune-cpu-556img-640px-epochs30.metadata.json
+    - tune-cpu-556img-640px-epochs30.onnx
 
 ---
 
@@ -17,10 +26,6 @@
 
 | #   | steps                                              |
 | --- | -------------------------------------------------- |
-| 0   | create venv and pip install                        |
-| 1   | process data: load and split                       |
-| 2   | train: train model                                 |
-| 3   | evaluate: eval model to meet the minimun threhold; |
-| 4   | export model: onnx                                 |
-| 5   | parity check                                       |
-| 6   | register model if all pass                         |
+| 1   | create model in sagemaker via terraform            |
+| 2   | create inference endpoint serverless via terraform |
+| 3   | test                                               |
