@@ -42,7 +42,7 @@
 
 ---
 
-### 7. pipeline(halt)
+### 7. pipeline
 
 - create pipeline with python sdk
 

@@ -15,7 +15,7 @@ locals {
   # Experiments
   # ##############################
   # fast launch ml.t3.xlarge;GP CPU ml.c5.large; GPU-powered ml.g4dn.xlarge
-  sagemaker_notebook_instance_type = "ml.t3.xlarge"
+  sagemaker_notebook_instance_type = "ml.g4dn.xlarge"
   sagemaker_notebook_volume_size   = 10
   sagemaker_mlflow_server_size     = "Small"
   sagemaker_mlflow_version         = "3.0"
