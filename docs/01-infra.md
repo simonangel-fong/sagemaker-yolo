@@ -1,3 +1,14 @@
+# Sagemaker yolo
+
+[Back](../README.md)
+
+- [Sagemaker yolo](#sagemaker-yolo)
+  - [Infra as code](#infra-as-code)
+
+---
+
+## Infra as code
+
 ```sh
 terraform -chdir=infra init -backend-config=backend.hcl
 
