@@ -38,7 +38,7 @@ resource "aws_sagemaker_domain" "yolo" {
     # notebook
     jupyter_lab_app_settings {
       default_resource_spec {
-        instance_type = var.notebook_instance_type
+        instance_type = local.sagemaker_notebook_instance_type
       }
 
       lifecycle_config_arns = [aws_sagemaker_studio_lifecycle_config.clone_repo.arn]

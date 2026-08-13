@@ -22,7 +22,7 @@ resource "aws_sagemaker_space" "notebook" {
 
     jupyter_lab_app_settings {
       default_resource_spec {
-        instance_type        = var.notebook_instance_type
+        instance_type        = local.sagemaker_notebook_instance_type
         lifecycle_config_arn = aws_sagemaker_studio_lifecycle_config.clone_repo.arn
       }
 
@@ -33,7 +33,7 @@ resource "aws_sagemaker_space" "notebook" {
 
     space_storage_settings {
       ebs_storage_settings {
-        ebs_volume_size_in_gb = var.notebook_volume_size
+        ebs_volume_size_in_gb = local.sagemaker_notebook_volume_size
       }
     }
   }
