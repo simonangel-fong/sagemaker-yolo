@@ -181,8 +181,8 @@ def build_train_cfg(device: str | int = "cpu", workers: int = 2, **overrides) ->
     Pairs with `run_sweep(base_cfg=...)` in src/tracking.py.
     """
     cfg = {
-        # yolo11n is the smallest variant, which matters without a GPU
-        "model": "yolo11n.pt",
+        # yolo26n is the smallest variant, which matters without a GPU
+        "model": "yolo26n.pt",
         "epochs": 10,
         "imgsz": 640,
         "batch": 8,
