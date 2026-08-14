@@ -222,8 +222,6 @@ eval_args = eval_processor.run(
                 s3_input_mode="File",
             ),
         ),
-        # data.yaml hardcodes path: /opt/ml/input/data/split, so mount the
-        # split there instead of under /opt/ml/processing
         ProcessingInput(
             input_name="split",
             s3_input=ProcessingS3Input(
@@ -235,7 +233,7 @@ eval_args = eval_processor.run(
                     .S3Output
                     .S3Uri
                 ),
-                local_path="/opt/ml/input/data/split",
+                local_path="/opt/ml/processing/split",
                 s3_data_type="S3Prefix",
                 s3_input_mode="File",
             ),

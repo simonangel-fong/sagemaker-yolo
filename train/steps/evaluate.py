@@ -22,10 +22,27 @@ model = YOLO("/opt/ml/processing/model/best.pt")
 # Evaluate on the val split
 # ------------------------
 
-# data.yaml hardcodes path: /opt/ml/input/data/split, so the split is mounted
-# there rather than under /opt/ml/processing -- see the eval step in pipeline.py
+# the pipeline's data.yaml hardcodes the training mount, and a processing job
+# cannot mount there, so rewrite the path for this job's layout
+with open("/opt/ml/processing/config/data.yaml") as f:
+    names = [
+        line.split(":", 1)[1].strip()
+        for line in f.read().splitlines()
+        if line.startswith("names:")
+    ][0]
+
+data_yaml = "/opt/ml/processing/data.yaml"
+
+with open(data_yaml, "w") as f:
+    f.write(
+        "path: /opt/ml/processing/split\n"
+        "train: train/images\n"
+        "val: val/images\n"
+        f"names: {names}\n"
+    )
+
 metrics = model.val(
-    data="/opt/ml/processing/config/data.yaml",
+    data=data_yaml,
     imgsz=640,
     device="cpu",
     project="/opt/ml/processing/evaluation/runs",
