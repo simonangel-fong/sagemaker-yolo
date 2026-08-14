@@ -41,10 +41,12 @@ terraform -chdir=infra output -raw studio_domain_role_arn
 # arn:aws:iam::099139718958:role/sagemaker-yolo-dev-sagemaker-execution-role
 terraform -chdir=infra output -raw s3_bucket_name
 # sagemaker-yolo-dev-up68ac
+terraform -chdir=infra output -raw ecr_train_repo
+# 099139718958.dkr.ecr.ca-central-1.amazonaws.com/sagemaker-yolo-train
 
 # upsert + run the pipeline
 cd train/
-python pipeline.py --role-arn arn:aws:iam::099139718958:role/sagemaker-yolo-dev-sagemaker-execution-role --bucket sagemaker-yolo-dev-up68ac
+python pipeline.py --role-arn arn:aws:iam::099139718958:role/sagemaker-yolo-dev-sagemaker-execution-role --bucket sagemaker-yolo-dev-up68ac --train-image 099139718958.dkr.ecr.ca-central-1.amazonaws.com/sagemaker-yolo-train
 ```
 
 ---
@@ -69,6 +71,6 @@ aws s3 cp s3://sagemaker-yolo-dev-up68ac/train-pipeline/config/data.yaml -
 # Clear the outputs
 aws s3 rm s3://sagemaker-yolo-dev-up68ac/train-pipeline/ --recursive
 
-# check log
+# check log: ProcessingJobs
 aws logs tail /aws/sagemaker/ProcessingJobs --follow
 ```

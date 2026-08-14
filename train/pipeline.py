@@ -15,7 +15,12 @@ from sagemaker.core.shapes import (
 )
 
 from sagemaker.train import ModelTrainer
-from sagemaker.train.configs import InputData, Compute
+from sagemaker.train.configs import (
+    InputData,
+    Compute,
+    SourceCode,
+    OutputDataConfig,
+)
 
 from sagemaker.mlops.workflow.pipeline import Pipeline
 from sagemaker.mlops.workflow.steps import ProcessingStep, TrainingStep
@@ -27,10 +32,17 @@ MODEL_PACKAGE_GROUP = "sagemaker-yolo"
 PREFIX = "train-pipeline"
 RAW_PREFIX = "raw-data"
 
+# training hyperparameters
+TRAIN_INSTANCE_TYPE = "ml.g5.xlarge"
+EPOCHS = 10
+IMAGE_SIZE = 640
+BATCH = 8
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--role-arn", required=True) # sagemaker iam role
 parser.add_argument("--bucket", required=True) # project bucket
+parser.add_argument("--train-image", required=True) # ecr training image
 args = parser.parse_args()
 
 
@@ -43,6 +55,9 @@ bucket = args.bucket
 
 # raw data
 INPUT_S3_URI = f"s3://{bucket}/{RAW_PREFIX}/"
+
+# training image, with ultralytics and the pretrained weights baked in
+TRAIN_IMAGE_URI = args.train_image
 
 
 # # #########################################################
@@ -109,43 +124,68 @@ step_process = ProcessingStep(
 )
 
 
-# # #########################################################
-# # 2. TrainingStep
-# # #########################################################
+# #########################################################
+# 2. TrainingStep
+# #########################################################
 
-# trainer = ModelTrainer(
-#     training_image=sklearn_image,
-#     role=role,
-#     compute=Compute(
-#         instance_type="ml.m5.large",
-#         instance_count=1,
-#     ),
-#     sagemaker_session=pipeline_session,
-#     input_data_config=[
-#         InputData(
-#             channel_name="train",
-#             data_source=(
-#                 step_process
-#                 .properties
-#                 .ProcessingOutputConfig
-#                 .Outputs["train"]
-#                 .S3Output
-#                 .S3Uri
-#             ),
-#             content_type="text/csv",
-#         )
-#     ],
-# )
+trainer = ModelTrainer(
+    training_image=TRAIN_IMAGE_URI,
+    role=role,
+    compute=Compute(
+        instance_type=TRAIN_INSTANCE_TYPE,
+        instance_count=1,
+    ),
+    sagemaker_session=pipeline_session,
+    # without this the model lands in the account default bucket
+    output_data_config=OutputDataConfig(
+        s3_output_path=f"s3://{bucket}/{PREFIX}/model",
+    ),
+    # ultralytics and the pretrained weights are baked into the image,
+    # so only the entry script is uploaded
+    source_code=SourceCode(
+        source_dir="steps",
+        entry_script="train.py",
+    ),
+    # passed to train.py as --epochs, --imgsz, --batch
+    hyperparameters={
+        "epochs": EPOCHS,
+        "imgsz": IMAGE_SIZE,
+        "batch": BATCH,
+    },
+    input_data_config=[
+        # mounted at /opt/ml/input/data/split -- where data.yaml points
+        InputData(
+            channel_name="split",
+            data_source=(
+                step_process
+                .properties
+                .ProcessingOutputConfig
+                .Outputs["split"]
+                .S3Output
+                .S3Uri
+            ),
+        ),
+        # mounted at /opt/ml/input/data/config -- holds data.yaml
+        InputData(
+            channel_name="config",
+            data_source=(
+                step_process
+                .properties
+                .ProcessingOutputConfig
+                .Outputs["config"]
+                .S3Output
+                .S3Uri
+            ),
+        ),
+    ],
+)
 
-# train_args = trainer.train(
-#     source_dir="code",
-#     entry_script="train.py",
-# )
+train_args = trainer.train()
 
-# step_train = TrainingStep(
-#     name="TrainIris",
-#     step_args=train_args,
-# )
+step_train = TrainingStep(
+    name="TrainYolo",
+    step_args=train_args,
+)
 
 
 # # ---------------------------------------------------------
@@ -257,7 +297,7 @@ pipeline = Pipeline(
     sagemaker_session=pipeline_session,
     steps=[
         step_process,
-        # step_train,
+        step_train,
         # step_evaluate,
         # step_register,
     ],

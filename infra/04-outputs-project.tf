@@ -25,6 +25,6 @@ output "studio_domain_id" {
 # ##############################
 # ECR
 # ##############################
-output "ecr_train_repository_url" {
+output "ecr_train_repo" {
   value = aws_ecr_repository.train.repository_url
 }
