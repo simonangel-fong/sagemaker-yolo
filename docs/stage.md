@@ -1,55 +1,17 @@
-## Stages
+stage: refactor
 
-### 1. init notebook
+1. train job
 
-- init infra via terraform
+- how to export hyperparameter from mlflow and integrate with train job pipeline
 
----
+train/hyperparams.json
+config.py
+pipeline.py
+train.py
+evaluate.py
 
-### 2. Train model
 
-- train model in train.ipynb
-- output model in s3 trains/models
+2. inference
 
----
+- now the inference it is baked in the train.py which is part of train job, not inference jobs.
 
-### 3. init mlflow
-
-- init mlflow in sagemaker
-
----
-
-### 4. track model training
-
-- enable tracking in sagemaker
-- train and track model with train-mlflow.ipynb
-- output model in s3 trains/models
-
----
-
-### 5. hyperparamter sweep
-
-- train model with mlflow hyperparameter
-- hyperparameter sweep with train-mlflow-sweep.ipynb
-- output model in s3 trains/models
-
----
-
-### 6. gpu notebook server(hold)
-
-- create train-mlflow-sweep-cpu-vs-gpu.ipynb
-- sweep with cpu and gpu
-
----
-
-### 7. pipeline
-
-- create pipeline with python sdk
-
----
-
-### 8. deployment
-
-- create model in sagemaker
-- create inference endpoint serverless
-- test

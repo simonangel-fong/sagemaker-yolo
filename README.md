@@ -1,6 +1,12 @@
 # sagemaker-yolo
 
-MLOps workflow to deploy a object detection model
+An aws sagemaker project to implmenet MLOps workflow to deploy a object detection model.
+
+- tech stack
+  - sagemaker
+  - yolo model
+  - mlflow
+
 
 ---
 
@@ -13,7 +19,11 @@ using sagemaker studio
 
 ---
 
+## CPU vs GPU
+
+---
+
 ## Inference deployment
 
 - sagemaker serverless endpiont
--
+- 

@@ -4,10 +4,14 @@ MLflow helpers.
 
 from __future__ import annotations
 
+import json
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 import mlflow
+
+METRIC_KEY = "metrics/mAP50-95B"
 
 
 def dataset_params(processed_dir: Path, raw_dir: Path | None = None) -> dict[str, object]:
@@ -123,7 +127,114 @@ def run_sweep(
     return results
 
 
-METRIC_KEY = "metrics/mAP50-95B"
+HYPERPARAMS_SCHEMA = 1
+
+# Notebook/runtime concerns, not hyperparameters. `device` and `workers` follow
+# the notebook instance; the pipeline trains on a different one and must pick
+# its own. `model` is baked into the training image as YOLO_WEIGHTS.
+NOT_HYPERPARAMS = frozenset(
+    {"device", "workers", "project", "name", "exist_ok", "model"}
+)
+
+
+def export_hyperparams(
+    path: Path,
+    best_run: dict,
+    base_cfg: dict,
+    sweep_axes: dict,
+    experiment: str,
+    tracking_uri: str,
+    metric: str = "mAP50-95",
+    n_compared: int | None = None,
+) -> Path:
+    """
+    Freeze the winning configuration to the file the train pipeline reads.
+
+    This is the handoff between MLflow and the pipeline. The pipeline never
+    queries the tracking server, so once this file is committed the server can
+    be shut down and training still reproduces the winning run.
+
+    `base_cfg` supplies the config the sweep held constant (imgsz, batch, seed);
+    `best_run` supplies the axes it varied. Both are needed -- the swept axes
+    alone are not a complete training configuration.
+    """
+    hyperparameters = {
+        key: value
+        for key, value in {**base_cfg, **{k: best_run[k] for k in sweep_axes}}.items()
+        if key not in NOT_HYPERPARAMS
+    }
+
+    document = {
+        "schema": HYPERPARAMS_SCHEMA,
+        "hyperparameters": hyperparameters,
+        "provenance": {
+            "run_id": best_run["run_id"],
+            "experiment": experiment,
+            "tracking_uri": tracking_uri,
+            "metric": metric,
+            "value": round(best_run[metric], 4),
+            "swept_axes": {k: list(v) for k, v in sweep_axes.items()},
+            "runs_compared": n_compared if n_compared is not None else len(sweep_axes),
+            "exported_at": datetime.now(timezone.utc).isoformat(),
+        },
+    }
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(document, indent=2) + "\n")
+    return path
+
+
+def export_hyperparams_from_experiment(
+    path: Path,
+    experiment_name: str,
+    base_cfg: dict,
+    sweep_axes: dict,
+    metric: str = "mAP50-95",
+) -> Path:
+    """
+    Rebuild the hyperparameter file from the tracking server.
+
+    Fallback for when the notebook session that ran the sweep is gone but the
+    server is still up -- cheaper than re-running the sweep to regenerate a
+    small JSON file. Requires the tracking server, unlike everything the
+    pipeline does.
+    """
+    experiment = mlflow.get_experiment_by_name(experiment_name)
+    if experiment is None:
+        raise RuntimeError(f"no experiment named {experiment_name!r}")
+
+    metric_column = f"metrics.{METRIC_KEY}"
+    runs = mlflow.search_runs(
+        experiment_ids=[experiment.experiment_id],
+        order_by=[f"{metric_column} DESC"],
+    )
+    if runs.empty or metric_column not in runs.columns:
+        raise RuntimeError(f"no runs with {METRIC_KEY} in {experiment_name!r}")
+
+    runs = runs.dropna(subset=[metric_column])
+    if runs.empty:
+        raise RuntimeError(f"no runs with {METRIC_KEY} in {experiment_name!r}")
+
+    winner = runs.iloc[0]
+    # mlflow returns every param as a string; the axes decide the real type
+    best_run = {"run_id": winner["run_id"], metric: float(winner[metric_column])}
+    for axis, values in sweep_axes.items():
+        raw = winner.get(f"params.{axis}")
+        if raw is None:
+            raise RuntimeError(f"run {winner['run_id']} has no param {axis!r}")
+        best_run[axis] = type(list(values)[0])(raw)
+
+    return export_hyperparams(
+        path,
+        best_run=best_run,
+        base_cfg=base_cfg,
+        sweep_axes=sweep_axes,
+        experiment=experiment_name,
+        tracking_uri=mlflow.get_tracking_uri(),
+        metric=metric,
+        n_compared=len(runs),
+    )
+
 
 # Floor is set from the run history: real 445-image runs land at 0.779-0.814,
 MIN_MAP = 0.70
