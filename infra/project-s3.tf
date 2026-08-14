@@ -141,27 +141,27 @@ data "aws_iam_policy_document" "yolo_bucket" {
   }
 
   # allow cloudfront to access web bucket
-  # dynamic "statement" {
-  #   for_each = var.enable_deploy ? [1] : []
+  dynamic "statement" {
+    for_each = var.enable_deploy ? [1] : []
 
-  #   content {
-  #     sid       = "AllowCloudFrontReadWeb"
-  #     effect    = "Allow"
-  #     actions   = ["s3:GetObject"]
-  #     resources = ["${aws_s3_bucket.yolo.arn}/web/*"]
+    content {
+      sid       = "AllowCloudFrontReadWeb"
+      effect    = "Allow"
+      actions   = ["s3:GetObject"]
+      resources = ["${aws_s3_bucket.yolo.arn}/web/*"]
 
-  #     principals {
-  #       type        = "Service"
-  #       identifiers = ["cloudfront.amazonaws.com"]
-  #     }
+      principals {
+        type        = "Service"
+        identifiers = ["cloudfront.amazonaws.com"]
+      }
 
-  #     condition {
-  #       test     = "StringEquals"
-  #       variable = "AWS:SourceArn"
-  #       values   = [aws_cloudfront_distribution.web[0].arn]
-  #     }
-  #   }
-  # }
+      condition {
+        test     = "StringEquals"
+        variable = "AWS:SourceArn"
+        values   = [aws_cloudfront_distribution.web[0].arn]
+      }
+    }
+  }
 }
 
 resource "aws_s3_bucket_policy" "yolo" {

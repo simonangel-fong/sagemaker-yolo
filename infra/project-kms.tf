@@ -73,27 +73,27 @@ data "aws_iam_policy_document" "kms" {
     }
   }
 
-  # # allow cloudfront decrypt
-  # dynamic "statement" {
-  #   for_each = var.enable_deploy ? [1] : []
+  # allow cloudfront decrypt
+  dynamic "statement" {
+    for_each = var.enable_deploy ? [1] : []
 
-  #   content {
-  #     sid       = "AllowCloudFrontDecryptWeb"
-  #     effect    = "Allow"
-  #     actions   = ["kms:Decrypt"]
-  #     resources = ["*"]
+    content {
+      sid       = "AllowCloudFrontDecryptWeb"
+      effect    = "Allow"
+      actions   = ["kms:Decrypt"]
+      resources = ["*"]
 
-  #     principals {
-  #       type        = "Service"
-  #       identifiers = ["cloudfront.amazonaws.com"]
-  #     }
+      principals {
+        type        = "Service"
+        identifiers = ["cloudfront.amazonaws.com"]
+      }
 
-  #     condition {
-  #       test     = "StringEquals"
-  #       variable = "AWS:SourceArn"
-  #       values   = [aws_cloudfront_distribution.web[0].arn]
-  #     }
-  #   }
-  # }
+      condition {
+        test     = "StringEquals"
+        variable = "AWS:SourceArn"
+        values   = [aws_cloudfront_distribution.web[0].arn]
+      }
+    }
+  }
 }
 
