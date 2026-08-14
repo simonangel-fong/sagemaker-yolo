@@ -26,6 +26,10 @@ from sagemaker.mlops.workflow.pipeline import Pipeline
 from sagemaker.mlops.workflow.steps import ProcessingStep, TrainingStep
 from sagemaker.serve.model_builder import ModelBuilder
 from sagemaker.mlops.workflow.model_step import ModelStep
+from sagemaker.mlops.workflow.condition_step import ConditionStep
+from sagemaker.core.workflow.conditions import ConditionGreaterThanOrEqualTo
+from sagemaker.core.workflow.properties import PropertyFile
+from sagemaker.core.workflow.functions import JsonGet
 
 
 MODEL_PACKAGE_GROUP = "sagemaker-yolo"
@@ -40,6 +44,9 @@ TRAIN_INSTANCE_TYPE = "ml.g5.xlarge"
 EPOCHS = 10
 IMAGE_SIZE = 640
 BATCH = 8
+
+# register the model only when it is at least this good
+MIN_MAP = 0.7
 
 
 parser = argparse.ArgumentParser()
@@ -73,6 +80,17 @@ sklearn_image = image_uris.retrieve(
     version="1.2-1",
     py_version="py3",
     instance_type="ml.m5.large",
+)
+
+# the model package records a serving container; the deploy pipeline owns the
+# endpoint and can override this when it creates the model
+inference_image = image_uris.retrieve(
+    framework="pytorch",
+    region=region,
+    version="2.6",
+    py_version="py312",
+    instance_type=PROCESS_INSTANCE_TYPE,
+    image_scope="inference",
 )
 
 
@@ -191,9 +209,9 @@ step_train = TrainingStep(
 )
 
 
-# ---------------------------------------------------------
+# #########################################################
 # 3. EvaluationStep
-# ---------------------------------------------------------
+# #########################################################
 
 # the training image, because evaluation needs ultralytics too
 eval_processor = ScriptProcessor(
@@ -267,46 +285,72 @@ eval_args = eval_processor.run(
     ],
 )
 
+# lets the condition below read a value out of evaluation.json
+evaluation_report = PropertyFile(
+    name="EvaluationReport",
+    output_name="evaluation",
+    path="evaluation.json",
+)
+
 step_evaluate = ProcessingStep(
     name="EvaluateYolo",
     step_args=eval_args,
+    property_files=[evaluation_report],
 )
 
 
-# # ---------------------------------------------------------
-# # 4. Register model
-# # ---------------------------------------------------------
+# ---------------------------------------------------------
+# 4. Register model
+# ---------------------------------------------------------
 
-# model_builder = ModelBuilder(
-#     s3_model_data_url=(
-#         step_train
-#         .properties
-#         .ModelArtifacts
-#         .S3ModelArtifacts
-#     ),
-#     image_uri=sklearn_image,
-#     role_arn=role,
-#     sagemaker_session=pipeline_session,
-# )
+model_builder = ModelBuilder(
+    s3_model_data_url=(
+        step_train
+        .properties
+        .ModelArtifacts
+        .S3ModelArtifacts
+    ),
+    image_uri=inference_image,
+    role_arn=role,
+    sagemaker_session=pipeline_session,
+)
 
-# register_args = model_builder.register(
-#     model_package_group_name=MODEL_PACKAGE_GROUP,
-#     content_types=["text/csv"],
-#     response_types=["application/json"],
-#     inference_instances=["ml.m5.large"],
-#     approval_status="PendingManualApproval",
-# )
+register_args = model_builder.register(
+    model_package_group_name=MODEL_PACKAGE_GROUP,
+    content_types=["application/x-image"],
+    response_types=["application/json"],
+    # serverless endpoints have no instance type; these describe what the
+    # package supports, and the deploy pipeline picks the real one
+    inference_instances=["ml.m5.large"],
+    approval_status="PendingManualApproval",
+)
 
-# step_register = ModelStep(
-#     name="RegisterIrisModel",
-#     step_args=register_args,
-# )
+step_register = ModelStep(
+    name="RegisterYolo",
+    step_args=register_args,
+)
 
-# # NOTE:
-# # This minimal file registers after evaluation.
-# # Add a ConditionStep later if you want:
-# #     accuracy >= threshold -> register
-# #     otherwise -> stop
+
+# ---------------------------------------------------------
+# 5. ConditionStep: register only when the model is good enough
+# ---------------------------------------------------------
+
+step_condition = ConditionStep(
+    name="CheckMap",
+    conditions=[
+        ConditionGreaterThanOrEqualTo(
+            left=JsonGet(
+                step_name=step_evaluate.name,
+                property_file=evaluation_report,
+                json_path="mAP50-95",
+            ),
+            right=MIN_MAP,
+        )
+    ],
+    # below the threshold nothing runs, and the execution still succeeds
+    if_steps=[step_register],
+    else_steps=[],
+)
 
 
 # #########################################################
@@ -319,7 +363,8 @@ pipeline = Pipeline(
         step_process,
         step_train,
         step_evaluate,
-        # step_register,
+        # step_register runs inside this condition
+        step_condition,
     ],
 )
 

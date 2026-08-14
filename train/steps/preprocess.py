@@ -44,8 +44,7 @@ for split, stems in splits.items():
             f"/opt/ml/processing/split/{split}/labels/{labels[stem]}",
         )
 
-# data.yaml: tells YOLO where the split is and what the classes are.
-# `path` is where the training job mounts the split, not where it is now.
+# data.yaml: show the split
 with open(f"{input_dir}/classes.txt") as f:
     names = f.read().split()
 

@@ -1,6 +1,7 @@
 # train.py
 
 import argparse
+import json
 import os
 import shutil
 
@@ -35,10 +36,37 @@ results = model.train(
 
 # persist
 os.makedirs("/opt/ml/model", exist_ok=True)
-shutil.copy2(
-    f"{results.save_dir}/weights/best.pt",
-    "/opt/ml/model/best.pt",
+
+best_pt = f"{results.save_dir}/weights/best.pt"
+shutil.copy2(best_pt, "/opt/ml/model/best.pt")
+
+# export: ONNX is the portable form the deploy pipeline serves
+best = YOLO(best_pt)
+onnx_path = best.export(
+    format="onnx",
+    imgsz=args.imgsz,
+    opset=12,
+    simplify=True,
 )
+shutil.copy2(onnx_path, "/opt/ml/model/model.onnx")
+
+# the sidecar tells the deploy pipeline how to preprocess and label
+with open("/opt/ml/model/model.metadata.json", "w") as f:
+    json.dump(
+        {
+            "imgsz": args.imgsz,
+            "names": [best.names[i] for i in sorted(best.names)],
+            "metrics": {
+                "mAP50": results.results_dict["metrics/mAP50(B)"],
+                "mAP50-95": results.results_dict["metrics/mAP50-95(B)"],
+                "precision": results.results_dict["metrics/precision(B)"],
+                "recall": results.results_dict["metrics/recall(B)"],
+            },
+            "epochs": args.epochs,
+        },
+        f,
+        indent=2,
+    )
 
 print(f"mAP50    {results.results_dict['metrics/mAP50(B)']:.4f}")
 print(f"mAP50-95 {results.results_dict['metrics/mAP50-95(B)']:.4f}")

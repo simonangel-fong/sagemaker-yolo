@@ -16,9 +16,12 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # Pin Ultralytics for reproducible builds.
+# onnx/onnxslim are needed by the ONNX export at the end of training.
 ARG ULTRALYTICS_VERSION
 RUN python -m pip install --no-cache-dir \
-    "ultralytics==${ULTRALYTICS_VERSION}"
+    "ultralytics==${ULTRALYTICS_VERSION}" \
+    onnx \
+    onnxslim
 
 # Bake pretrained weights
 ENV YOLO_WEIGHTS=/opt/ml/weights/yolo26n.pt

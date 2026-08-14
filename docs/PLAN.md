@@ -33,3 +33,4 @@
 | 7   | test train job                              |
 | 8   | rewrite evaluate, pipeline                  |
 | 9   | test pipeline                               |
+| 10  | register model                              |
