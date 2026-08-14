@@ -10,6 +10,9 @@ input_dir = "/opt/ml/processing/input"
 images = {}
 labels = {}
 
+# ##############################
+# Load images
+# ##############################
 # read: an image and its label
 for name in os.listdir(input_dir):
     stem, suffix = os.path.splitext(name)
@@ -21,6 +24,9 @@ for name in os.listdir(input_dir):
 # sort
 pairs = sorted(images.keys() & labels.keys())
 
+# ##############################
+# Split
+# ##############################
 # split
 random.Random(42).shuffle(pairs)
 
@@ -32,7 +38,9 @@ splits = {
     "train": pairs[n_val:],
 }
 
+# ##############################
 # persist
+# ##############################
 for split, stems in splits.items():
     os.makedirs(f"/opt/ml/processing/split/{split}/images", exist_ok=True)
     os.makedirs(f"/opt/ml/processing/split/{split}/labels", exist_ok=True)
@@ -53,6 +61,9 @@ with open(f"{input_dir}/classes.txt") as f:
 
 os.makedirs("/opt/ml/processing/config", exist_ok=True)
 
+# ##############################
+# create data.yaml
+# ##############################
 with open("/opt/ml/processing/config/data.yaml", "w") as f:
     f.write(
         "path: /opt/ml/input/data/split\n"

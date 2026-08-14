@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "hyperparameters": {
+    "epochs": 50,
+    "imgsz": 640,
+    "batch": 8,
+    "seed": 0
+  },
+  "provenance": {
+    "run_id": "ed580a66e58b4c4584a9eb2d2041f931",
+    "experiment": "yolo-plate-detection-sweep",
+    "tracking_uri": "arn:aws:sagemaker:ca-central-1:099139718958:mlflow-tracking-server/sagemaker-yolo-dev",
+    "metric": "mAP50-95",
+    "value": 0.8276,
+    "swept_axes": {
+      "epochs": [
+        10,
+        20,
+        30,
+        40,
+        50
+      ]
+    },
+    "runs_compared": 5,
+    "exported_at": "2026-08-13T21:50:13.633749+00:00",
+    "note": "Reconstructed from models/tune-gpu-556img-640px-epochs50.metadata.json to exercise the pipeline. Overwritten by the sweep notebook on the next real export."
+  }
+}
