@@ -32,6 +32,9 @@ MODEL_PACKAGE_GROUP = "sagemaker-yolo"
 PREFIX = "train-pipeline"
 RAW_PREFIX = "raw-data"
 
+# instance types
+PROCESS_INSTANCE_TYPE = "ml.m5.large"
+
 # training hyperparameters
 TRAIN_INSTANCE_TYPE = "ml.g5.xlarge"
 EPOCHS = 10
@@ -188,69 +191,88 @@ step_train = TrainingStep(
 )
 
 
-# # ---------------------------------------------------------
-# # 3. EvaluationStep
-# # ---------------------------------------------------------
+# ---------------------------------------------------------
+# 3. EvaluationStep
+# ---------------------------------------------------------
 
-# eval_processor = ScriptProcessor(
-#     image_uri=sklearn_image,
-#     command=["python3"],
-#     role=role,
-#     instance_type="ml.m5.large",
-#     instance_count=1,
-#     sagemaker_session=pipeline_session,
-# )
+# the training image, because evaluation needs ultralytics too
+eval_processor = ScriptProcessor(
+    image_uri=TRAIN_IMAGE_URI,
+    command=["python3"],
+    role=role,
+    instance_type=PROCESS_INSTANCE_TYPE,
+    instance_count=1,
+    sagemaker_session=pipeline_session,
+)
 
-# eval_args = eval_processor.run(
-#     code="code/evaluate.py",
-#     inputs=[
-#         ProcessingInput(
-#             input_name="model",
-#             s3_input=ProcessingS3Input(
-#                 s3_uri=(
-#                     step_train
-#                     .properties
-#                     .ModelArtifacts
-#                     .S3ModelArtifacts
-#                 ),
-#                 local_path="/opt/ml/processing/model",
-#                 s3_data_type="S3Prefix",
-#                 s3_input_mode="File",
-#             ),
-#         ),
-#         ProcessingInput(
-#             input_name="validation",
-#             s3_input=ProcessingS3Input(
-#                 s3_uri=(
-#                     step_process
-#                     .properties
-#                     .ProcessingOutputConfig
-#                     .Outputs["validation"]
-#                     .S3Output
-#                     .S3Uri
-#                 ),
-#                 local_path="/opt/ml/processing/validation",
-#                 s3_data_type="S3Prefix",
-#                 s3_input_mode="File",
-#             ),
-#         ),
-#     ],
-#     outputs=[
-#         ProcessingOutput(
-#             output_name="evaluation",
-#             s3_output=ProcessingS3Output(
-#                 s3_uri=f"s3://{bucket}/{PREFIX}/evaluation",
-#                 local_path="/opt/ml/processing/evaluation",
-#                 s3_upload_mode="EndOfJob",
-#             ),
-#         )
-#     ],
-# )
+eval_args = eval_processor.run(
+    code="steps/evaluate.py",
+    inputs=[
+        ProcessingInput(
+            input_name="model",
+            s3_input=ProcessingS3Input(
+                s3_uri=(
+                    step_train
+                    .properties
+                    .ModelArtifacts
+                    .S3ModelArtifacts
+                ),
+                local_path="/opt/ml/processing/model",
+                s3_data_type="S3Prefix",
+                s3_input_mode="File",
+            ),
+        ),
+        # data.yaml hardcodes path: /opt/ml/input/data/split, so mount the
+        # split there instead of under /opt/ml/processing
+        ProcessingInput(
+            input_name="split",
+            s3_input=ProcessingS3Input(
+                s3_uri=(
+                    step_process
+                    .properties
+                    .ProcessingOutputConfig
+                    .Outputs["split"]
+                    .S3Output
+                    .S3Uri
+                ),
+                local_path="/opt/ml/input/data/split",
+                s3_data_type="S3Prefix",
+                s3_input_mode="File",
+            ),
+        ),
+        ProcessingInput(
+            input_name="config",
+            s3_input=ProcessingS3Input(
+                s3_uri=(
+                    step_process
+                    .properties
+                    .ProcessingOutputConfig
+                    .Outputs["config"]
+                    .S3Output
+                    .S3Uri
+                ),
+                local_path="/opt/ml/processing/config",
+                s3_data_type="S3Prefix",
+                s3_input_mode="File",
+            ),
+        ),
+    ],
+    outputs=[
+        ProcessingOutput(
+            output_name="evaluation",
+            s3_output=ProcessingS3Output(
+                s3_uri=f"s3://{bucket}/{PREFIX}/evaluation",
+                local_path="/opt/ml/processing/evaluation",
+                s3_upload_mode="EndOfJob",
+            ),
+        )
+    ],
+)
 
-# step_evaluate = ProcessingStep(
-#     name="EvaluateIris",
-#     step_args=eval_args,
-# )
+step_evaluate = ProcessingStep(
+    name="EvaluateYolo",
+    step_args=eval_args,
+)
 
 
 # # ---------------------------------------------------------
@@ -298,7 +320,7 @@ pipeline = Pipeline(
     steps=[
         step_process,
         step_train,
-        # step_evaluate,
+        step_evaluate,
         # step_register,
     ],
 )
