@@ -50,7 +50,21 @@ onnx_path = best.export(
 )
 shutil.copy2(onnx_path, "/opt/ml/model/model.onnx")
 
-# the sidecar tells the deploy pipeline how to preprocess and label
+# code/ is what the inference toolkit looks for inside model.tar.gz, so the
+# artifact is deployable as registered
+code_dir = os.path.dirname(os.path.abspath(__file__))
+os.makedirs("/opt/ml/model/code", exist_ok=True)
+
+shutil.copy2(
+    f"{code_dir}/inference.py",
+    "/opt/ml/model/code/inference.py",
+)
+shutil.copy2(
+    f"{code_dir}/requirements-inference.txt",
+    "/opt/ml/model/code/requirements.txt",
+)
+
+# the sidecar tells the endpoint how to preprocess and label
 with open("/opt/ml/model/model.metadata.json", "w") as f:
     json.dump(
         {
