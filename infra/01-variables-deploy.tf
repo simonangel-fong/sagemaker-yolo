@@ -6,34 +6,29 @@
 variable "enable_deploy" {
   description = "Whether to enable deployment."
   type        = bool
-  default     = false
+  default     = true
 }
 
 # ##############################
 # Endpoint
 # ##############################
-variable "model_run" {
-  description = "Model basename under deploy/ in S3. Packaged by deploy/package.py."
+variable "model_package_group" {
+  description = "Model package group the training pipeline registers into."
   type        = string
-  default     = "tune-cpu-556img-640px-epochs30"
+  default     = "sagemaker-yolo"
 }
 
-variable "inference_image_uri" {
-  description = "PyTorch inference DLC. Must match aws_region."
-  type        = string
-  default     = "763104351884.dkr.ecr.ca-central-1.amazonaws.com/pytorch-inference:2.6-cpu-py312"
+# the version must be Approved before it can be deployed
+variable "model_version" {
+  description = "Model package version to deploy."
+  type        = number
+  default     = 2
 }
 
 variable "conf_threshold" {
   description = "Minimum detection confidence."
   type        = string
   default     = "0.25"
-}
-
-variable "iou_threshold" {
-  description = "IoU threshold for NMS."
-  type        = string
-  default     = "0.45"
 }
 
 variable "serverless_memory_mb" {

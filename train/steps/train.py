@@ -12,11 +12,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--epochs", type=int, default=10)
 parser.add_argument("--imgsz", type=int, default=640)
 parser.add_argument("--batch", type=int, default=8)
-# GPU 0 when there is one, else cpu -- same script on a laptop and on ml.g5
+# GPU 0 when gpu
 parser.add_argument("--device", default=0 if torch.cuda.is_available() else "cpu")
 args = parser.parse_args()
 
-# data.yaml points at /opt/ml/input/data/split
+# data.yaml mount points
 data_yaml = "/opt/ml/input/data/config/data.yaml"
 
 # baked pretrained
@@ -40,7 +40,7 @@ os.makedirs("/opt/ml/model", exist_ok=True)
 best_pt = f"{results.save_dir}/weights/best.pt"
 shutil.copy2(best_pt, "/opt/ml/model/best.pt")
 
-# export: ONNX is the portable form the deploy pipeline serves
+# export ONNX 
 best = YOLO(best_pt)
 onnx_path = best.export(
     format="onnx",

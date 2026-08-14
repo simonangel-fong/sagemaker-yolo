@@ -6,10 +6,11 @@ import shutil
 
 input_dir = "/opt/ml/processing/input"
 
-# read: an image and its label share a basename
+
 images = {}
 labels = {}
 
+# read: an image and its label
 for name in os.listdir(input_dir):
     stem, suffix = os.path.splitext(name)
     if suffix.lower() in (".jpeg", ".jpg", ".png"):
@@ -17,11 +18,13 @@ for name in os.listdir(input_dir):
     elif suffix.lower() == ".txt" and name != "classes.txt":
         labels[stem] = name
 
+# sort
 pairs = sorted(images.keys() & labels.keys())
 
 # split
 random.Random(42).shuffle(pairs)
 
+# val
 n_val = round(len(pairs) * 0.2)
 
 splits = {

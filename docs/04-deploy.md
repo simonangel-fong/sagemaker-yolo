@@ -1,3 +1,17 @@
+## Promote model
+
+```sh
+aws sagemaker update-model-package --model-package-arn arn:aws:sagemaker:ca-central-1:099139718958:model-package/sagemaker-yolo/2 --model-approval-status Approved
+# {
+    # "ModelPackageArn": "arn:aws:sagemaker:ca-central-1:099139718958:model-package/sagemaker-yolo/2"
+# }
+
+```
+
+---
+
+## App
+
 ```sh
 # package the model and upload to S3
 python -m deploy.package

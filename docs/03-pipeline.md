@@ -74,3 +74,5 @@ aws s3 rm s3://sagemaker-yolo-dev-up68ac/train-pipeline/ --recursive
 # check log: ProcessingJobs
 aws logs tail /aws/sagemaker/ProcessingJobs --follow
 ```
+
+---
