@@ -1,7 +1,9 @@
 # pipeline.py
 # the script define pipeline
 
-from sagemaker.core.helper.session_helper import Session, get_execution_role
+import argparse
+
+from sagemaker.core.helper.session_helper import Session
 from sagemaker.core.workflow.pipeline_context import PipelineSession
 from sagemaker.core import image_uris
 from sagemaker.core.processing import ScriptProcessor
@@ -21,22 +23,31 @@ from sagemaker.serve.model_builder import ModelBuilder
 from sagemaker.mlops.workflow.model_step import ModelStep
 
 
-INPUT_S3_URI = "s3://sagemaker-yolo-dev-up68ac/raw-data/"
 MODEL_PACKAGE_GROUP = "sagemaker-yolo"
 PREFIX = "train-pipeline"
+RAW_PREFIX = "raw-data"
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--role-arn", required=True) # sagemaker iam role
+parser.add_argument("--bucket", required=True) # project bucket
+args = parser.parse_args()
 
 
 session = Session()
 pipeline_session = PipelineSession()
 
 region = session.boto_region_name
-role = get_execution_role()
-bucket = session.default_bucket()
+role = args.role_arn
+bucket = args.bucket
+
+# raw data
+INPUT_S3_URI = f"s3://{bucket}/{RAW_PREFIX}/"
 
 
-# ---------------------------------------------------------
+# # #########################################################
 # Shared sklearn image
-# ---------------------------------------------------------
+# # #########################################################
 
 sklearn_image = image_uris.retrieve(
     framework="sklearn",
@@ -74,18 +85,18 @@ process_args = processor.run(
     ],
     outputs=[
         ProcessingOutput(
-            output_name="train",
+            output_name="split",
             s3_output=ProcessingS3Output(
-                s3_uri=f"s3://{bucket}/{PREFIX}/train",
-                local_path="/opt/ml/processing/train",
+                s3_uri=f"s3://{bucket}/{PREFIX}/split",
+                local_path="/opt/ml/processing/split",
                 s3_upload_mode="EndOfJob",
             ),
         ),
         ProcessingOutput(
-            output_name="validation",
+            output_name="config",
             s3_output=ProcessingS3Output(
-                s3_uri=f"s3://{bucket}/{PREFIX}/validation",
-                local_path="/opt/ml/processing/validation",
+                s3_uri=f"s3://{bucket}/{PREFIX}/config",
+                local_path="/opt/ml/processing/config",
                 s3_upload_mode="EndOfJob",
             ),
         ),
@@ -93,7 +104,7 @@ process_args = processor.run(
 )
 
 step_process = ProcessingStep(
-    name="ProcessIris",
+    name="ProcessYolo",
     step_args=process_args,
 )
 
