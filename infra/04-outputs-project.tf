@@ -21,3 +21,10 @@ output "studio_domain_role_arn" {
 output "studio_domain_id" {
   value = aws_sagemaker_domain.yolo.id
 }
+
+# ##############################
+# ECR
+# ##############################
+output "ecr_train_repository_url" {
+  value = aws_ecr_repository.train.repository_url
+}

@@ -1,27 +1,44 @@
+# train.py
+
+import argparse
 import os
-import joblib
-import pandas as pd
+import shutil
 
-from sklearn.ensemble import RandomForestClassifier
+import torch
+from ultralytics import YOLO
 
-train_path = "/opt/ml/input/data/train/train.csv"
+parser = argparse.ArgumentParser()
+parser.add_argument("--epochs", type=int, default=10)
+parser.add_argument("--imgsz", type=int, default=640)
+parser.add_argument("--batch", type=int, default=8)
+# GPU 0 when there is one, else cpu -- same script on a laptop and on ml.g5
+parser.add_argument("--device", default=0 if torch.cuda.is_available() else "cpu")
+args = parser.parse_args()
 
-df = pd.read_csv(train_path)
+# data.yaml points at /opt/ml/input/data/split
+data_yaml = "/opt/ml/input/data/config/data.yaml"
 
-X = df.drop(columns=["target"])
-y = df["target"]
+# baked pretrained
+model = YOLO(os.environ["YOLO_WEIGHTS"])
 
-model = RandomForestClassifier(
-    n_estimators=100,
-    max_depth=5,
-    random_state=42,
+# train
+results = model.train(
+    data=data_yaml,
+    epochs=args.epochs,
+    imgsz=args.imgsz,
+    batch=args.batch,
+    device=args.device,
+    project="/opt/ml/output/runs",
+    name="train",
+    exist_ok=True,
 )
 
-model.fit(X, y)
-
+# persist
 os.makedirs("/opt/ml/model", exist_ok=True)
-
-joblib.dump(
-    model,
-    "/opt/ml/model/model.joblib",
+shutil.copy2(
+    f"{results.save_dir}/weights/best.pt",
+    "/opt/ml/model/best.pt",
 )
+
+print(f"mAP50    {results.results_dict['metrics/mAP50(B)']:.4f}")
+print(f"mAP50-95 {results.results_dict['metrics/mAP50-95(B)']:.4f}")

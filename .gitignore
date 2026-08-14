@@ -236,3 +236,6 @@ configs/
 runs/
 wandb/
 
+# local docker test fixture (see docs/pipeline.md)
+train/.local/
+
