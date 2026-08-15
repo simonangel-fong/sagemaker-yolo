@@ -443,3 +443,33 @@ def tracking_uri(name_prefix: str = "sagemaker-yolo") -> str:
         f"found apps {[a['Name'] for a in apps]} and "
         f"servers {[s['TrackingServerName'] for s in servers]}"
     )
+
+
+def tracking_status(uri: str) -> dict:
+    """
+    Status and UI URL for a tracking URI, whichever backend it points at.
+
+    The app and the tracking server disagree on almost everything here: the app
+    is described by ARN and the server by name, and the server publishes a
+    stable `TrackingServerUrl` while the app's UI is only reachable through a
+    presigned URL that expires. Both are normalised to `status`/`ui_url` so the
+    notebooks do not have to care which one they are talking to.
+    """
+    import boto3
+
+    client = boto3.client("sagemaker")
+
+    if ":mlflow-app/" in uri:
+        app = client.describe_mlflow_app(Arn=uri)
+        return {
+            "status": app["Status"],
+            "ui_url": client.create_presigned_mlflow_app_url(Arn=uri)["AuthorizedUrl"],
+        }
+
+    server = client.describe_mlflow_tracking_server(
+        TrackingServerName=uri.rsplit("/", 1)[-1]
+    )
+    return {
+        "status": server["TrackingServerStatus"],
+        "ui_url": server["TrackingServerUrl"],
+    }
