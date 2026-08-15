@@ -12,6 +12,9 @@ from pathlib import Path
 TRAIN_DIR = Path(__file__).resolve().parent
 HYPERPARAMS_PATH = TRAIN_DIR / "hyperparams.json"
 
+# the serving handler, injected into the model artifact by the packaging step
+INFERENCE_DIR = TRAIN_DIR.parent / "inference"
+
 # schema versions this module knows how to read
 SUPPORTED_SCHEMAS = (1,)
 

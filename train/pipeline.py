@@ -50,7 +50,7 @@ from sagemaker.mlops.workflow.condition_step import ConditionStep
 from sagemaker.core.workflow.conditions import ConditionGreaterThanOrEqualTo
 from sagemaker.core.workflow.parameters import ParameterFloat, ParameterString
 from sagemaker.core.workflow.properties import PropertyFile
-from sagemaker.core.workflow.functions import JsonGet
+from sagemaker.core.workflow.functions import JsonGet, Join
 
 # import config
 try: 
@@ -82,6 +82,15 @@ def build_pipeline(
     provenance = provenance or {}
 
     input_s3_uri = f"s3://{bucket}/{config.RAW_PREFIX}/"
+
+    # the packaging step reads the handler from S3, so upload it at build time;
+    # ScriptProcessor.run takes a single script and has no source_dir
+    handler_s3_uri = pipeline_session.upload_data(
+        path=str(config.INFERENCE_DIR),
+        bucket=bucket,
+        key_prefix=f"{config.PREFIX}/inference-code",
+    )
+    print(f"handler    {handler_s3_uri}")
 
     # ##############################
     # Pipeline parameters
@@ -236,7 +245,69 @@ def build_pipeline(
     model_artifacts = step_train.properties.ModelArtifacts.S3ModelArtifacts
 
     # #########################################################
-    # 3. EvaluationStep
+    # 3. PackageStep: inject the serving handler
+    # #########################################################
+    # the training job no longer writes code/ into the artifact, so the handler
+    # is added here; only stdlib tarfile is needed, hence the cheap image
+    packager = ScriptProcessor(
+        image_uri=sklearn_image,
+        command=["python3"],
+        role=role,
+        instance_type=config.PROCESS_INSTANCE_TYPE,
+        instance_count=1,
+        sagemaker_session=pipeline_session,
+    )
+
+    package_args = packager.run(
+        code="steps/package.py",
+        inputs=[
+            # the trained model.tar.gz
+            ProcessingInput(
+                input_name="model",
+                s3_input=ProcessingS3Input(
+                    s3_uri=model_artifacts,
+                    local_path="/opt/ml/processing/model",
+                    s3_data_type="S3Prefix",
+                    s3_input_mode="File",
+                ),
+            ),
+            # inference.py and requirements.txt, uploaded above
+            ProcessingInput(
+                input_name="handler",
+                s3_input=ProcessingS3Input(
+                    s3_uri=handler_s3_uri,
+                    local_path="/opt/ml/processing/handler",
+                    s3_data_type="S3Prefix",
+                    s3_input_mode="File",
+                ),
+            ),
+        ],
+        outputs=[
+            ProcessingOutput(
+                output_name="packaged",
+                s3_output=ProcessingS3Output(
+                    s3_uri=f"s3://{bucket}/{config.PREFIX}/packaged",
+                    local_path="/opt/ml/processing/packaged",
+                    s3_upload_mode="EndOfJob",
+                ),
+            )
+        ],
+    )
+
+    step_package = ProcessingStep(
+        name="PackageYolo",
+        step_args=package_args,
+    )
+
+    # the deployable artifact: weights plus code/inference.py
+    packaged_dir = (
+        step_package.properties.ProcessingOutputConfig.Outputs["packaged"].S3Output.S3Uri
+    )
+    # ProcessingOutput reports the directory; the registry wants the tarball
+    packaged_model = Join(on="/", values=[packaged_dir, "model.tar.gz"])
+
+    # #########################################################
+    # 4. EvaluationStep
     # #########################################################
     # construct script processor for eval
     eval_processor = ScriptProcessor(
@@ -313,11 +384,11 @@ def build_pipeline(
     )
 
     # #########################################################
-    # 4. Register model
+    # 5. Register model
     # #########################################################
     # construct model builder
     model_builder = ModelBuilder(
-        s3_model_data_url=model_artifacts,
+        s3_model_data_url=packaged_model,
         image_uri=inference_image,
         role_arn=role,
         sagemaker_session=pipeline_session,
@@ -341,7 +412,7 @@ def build_pipeline(
     )
 
     # #########################################################
-    # 5. ConditionStep: register only when metrics is above threhold
+    # 6. ConditionStep: register only when metrics is above threhold
     # #########################################################
     # define condition step
     step_condition = ConditionStep(
@@ -370,6 +441,7 @@ def build_pipeline(
         steps=[
             step_process, # data process
             step_train, # train model
+            step_package, # inject the serving handler into the artifact
             step_evaluate, # eval
             step_condition, # condition, run step_register if sucdeed
         ],

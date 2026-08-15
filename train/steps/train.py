@@ -86,34 +86,28 @@ best_pt = f"{results.save_dir}/weights/best.pt"
 shutil.copy2(best_pt, "/opt/ml/model/best.pt")
 
 # export ONNX
+# end2end=True is already the YOLO26 default, but the handler decodes the shape
+# it produces -- [1, 300, 6], NMS-free -- so pin it rather than inherit it
 best = YOLO(best_pt)
 onnx_path = best.export(
     format="onnx",
     imgsz=args.imgsz,
     opset=12,
     simplify=True,
+    end2end=True,
 )
 shutil.copy2(onnx_path, "/opt/ml/model/model.onnx")
 
-# code/ is what the inference toolkit looks for inside model.tar.gz, so the
-# artifact is deployable as registered
-code_dir = os.path.dirname(os.path.abspath(__file__))
-os.makedirs("/opt/ml/model/code", exist_ok=True)
-
-shutil.copy2(
-    f"{code_dir}/inference.py",
-    "/opt/ml/model/code/inference.py",
-)
-shutil.copy2(
-    f"{code_dir}/requirements-inference.txt",
-    "/opt/ml/model/code/requirements.txt",
-)
+# the serving handler is not written here: the PackageYolo pipeline step injects
+# code/inference.py into the artifact, so it can change without retraining
 
 # ##############################
 # Export metadate
 # ##############################
 metadata = {
     "imgsz": args.imgsz,
+    # how to decode the ONNX output: True means [1, 300, 6], already filtered
+    "end2end": True,
     "names": [best.names[i] for i in sorted(best.names)],
     "metrics": {
         "mAP50": results.results_dict["metrics/mAP50(B)"],

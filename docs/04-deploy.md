@@ -13,8 +13,8 @@ aws sagemaker update-model-package --model-package-arn arn:aws:sagemaker:ca-cent
 ## App
 
 ```sh
-# package the model and upload to S3
-python -m deploy.package
+# the artifact is packaged by the PackageYolo pipeline step, which injects
+# code/inference.py from inference/ -- nothing to build locally
 
 # test the endpoint
 python -m deploy.invoke --image data/raw/audi_a5_with_license_plate_43.png
