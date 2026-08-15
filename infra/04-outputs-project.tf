@@ -28,3 +28,7 @@ output "studio_domain_id" {
 output "ecr_train_repo" {
   value = aws_ecr_repository.train.repository_url
 }
+
+output "ecr_predict_repo" {
+  value = aws_ecr_repository.predict.repository_url
+}

@@ -54,6 +54,17 @@ variable "serverless_max_concurrency" {
 }
 
 # ##############################
+# Predict function
+# ##############################
+# The image must already be pushed under this tag before apply -- Terraform
+# resolves it to a digest rather than building it.
+variable "predict_image_tag" {
+  description = "ECR tag of the predict container image to deploy."
+  type        = string
+  default     = "latest"
+}
+
+# ##############################
 # Web app
 # ##############################
 variable "web_model_name" {
