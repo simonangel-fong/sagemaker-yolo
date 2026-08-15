@@ -429,7 +429,9 @@ def build_pipeline(
             )
         ],
         # , and the execution still succeeds
-        if_steps=[step_register], # register step when meet condition
+        # packaging exists only to feed the registry, so it belongs on this
+        # branch: a model below the threshold is never packaged at all
+        if_steps=[step_package, step_register],
         else_steps=[], # below the threshold nothing runs
     )
 
@@ -441,9 +443,8 @@ def build_pipeline(
         steps=[
             step_process, # data process
             step_train, # train model
-            step_package, # inject the serving handler into the artifact
             step_evaluate, # eval
-            step_condition, # condition, run step_register if sucdeed
+            step_condition, # gate: package and register only if above threshold
         ],
     )
 
