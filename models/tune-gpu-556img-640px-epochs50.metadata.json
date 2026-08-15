@@ -4,13 +4,13 @@
     "car_plate"
   ],
   "metrics": {
-    "mAP50": 0.9688,
-    "mAP50-95": 0.8276
+    "mAP50": 0.9748,
+    "mAP50-95": 0.8336
   },
   "mlflow": {
-    "run_id": "ed580a66e58b4c4584a9eb2d2041f931",
+    "run_id": "29e817e747cb438081f4b0122ed70c2f",
     "experiment": "yolo-plate-detection-sweep",
-    "tracking_uri": "arn:aws:sagemaker:ca-central-1:099139718958:mlflow-tracking-server/sagemaker-yolo-dev"
+    "tracking_uri": "arn:aws:sagemaker:ca-central-1:099139718958:mlflow-app/app-XWJPU4F3CZ44"
   },
   "sweep": {
     "axes": {
@@ -28,5 +28,5 @@
     "runs_compared": 5
   },
   "images": 556,
-  "exported_at": "2026-08-13T21:50:13.633749+00:00"
+  "exported_at": "2026-08-15T04:13:07.022930+00:00"
 }
