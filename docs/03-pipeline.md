@@ -3,9 +3,31 @@
 [Back](../README.md)
 
 - [Sagemaker yolo - Pipeline](#sagemaker-yolo---pipeline)
+  - [Hyperparameters design](#hyperparameters-design)
   - [Train image](#train-image)
   - [Pipeline](#pipeline)
   - [Debug](#debug)
+
+---
+
+## Hyperparameters design
+
+The notebook's **Export hyperparameters** cell writes `train/hyperparams.json`.
+Commit it to git.
+
+`train/hyperparams.json` is the contract between the sweep and the pipeline:
+
+```json
+{
+  "schema": 1,
+  "hyperparameters": { "epochs": 50, "imgsz": 640, "batch": 8, "seed": 0 },
+  "provenance": {
+    "run_id": "ed580a66...",
+    "metric": "mAP50-95",
+    "value": 0.8276
+  }
+}
+```
 
 ---
 
@@ -74,5 +96,3 @@ aws s3 rm s3://sagemaker-yolo-dev-up68ac/train-pipeline/ --recursive
 # check log: ProcessingJobs
 aws logs tail /aws/sagemaker/ProcessingJobs --follow
 ```
-
----

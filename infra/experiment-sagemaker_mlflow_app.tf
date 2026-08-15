@@ -1,15 +1,7 @@
-# sagemaker_mlflow_server.tf
-#
-# RETIRED. The tracking server bills per hour whether or not anything is logging
-# to it, so it was replaced by the serverless MLflow app in
-# experiment-sagemaker_mlflow_app.tf, which carries these same resource names.
-# Kept commented out as a record of the previous setup.
+# sagemaker_mlflow_app.tf
 
-/*
 locals {
   mlflow_prefix = "mlflow"
-  sagemaker_mlflow_server_size     = "Small"
-  sagemaker_mlflow_version         = "3.0"
 }
 
 # ##############################
@@ -18,25 +10,25 @@ locals {
 data "aws_iam_policy_document" "mlflow_access" {
   count = var.enable_experiment ? 1 : 0
 
-  # allow mlflow instance for mlflow actions
+  # allow the studio execution role to log runs against the app
   statement {
     sid    = "MlflowTracking"
     effect = "Allow"
 
     actions = ["sagemaker-mlflow:*"]
 
-    resources = [aws_sagemaker_mlflow_tracking_server.yolo[0].arn]
+    resources = [aws_sagemaker_mlflow_app.yolo[0].arn]
   }
 
-  # allow mlflow server access in sagemaker
+  # allow discovery of the app from sagemaker
   statement {
-    sid    = "MlflowServerAccess"
+    sid    = "MlflowAppAccess"
     effect = "Allow"
 
     actions = [
-      "sagemaker:CreatePresignedMlflowTrackingServerUrl",
-      "sagemaker:DescribeMlflowTrackingServer",
-      "sagemaker:ListMlflowTrackingServers",
+      "sagemaker:CreatePresignedMlflowAppUrl",
+      "sagemaker:DescribeMlflowApp",
+      "sagemaker:ListMlflowApps",
     ]
 
     resources = ["*"]
@@ -47,7 +39,7 @@ resource "aws_iam_policy" "mlflow_access" {
   count = var.enable_experiment ? 1 : 0
 
   name        = "${local.prefix_name}-mlflow-access"
-  description = "Studio execution role access to the MLflow tracking server."
+  description = "Studio execution role access to the MLflow app."
   policy      = data.aws_iam_policy_document.mlflow_access[0].json
 }
 
@@ -60,7 +52,7 @@ resource "aws_iam_role_policy_attachment" "mlflow_access" {
 
 
 # ##############################
-# IAM rolw: MLflow tracking server role
+# IAM role: MLflow app role
 # ##############################
 resource "aws_iam_role" "mlflow" {
   count = var.enable_experiment ? 1 : 0
@@ -148,7 +140,7 @@ resource "aws_iam_policy" "mlflow_artifacts" {
   count = var.enable_experiment ? 1 : 0
 
   name        = "${local.prefix_name}-mlflow-artifacts"
-  description = "MLflow tracking server access to the artifact store."
+  description = "MLflow app access to the artifact store."
   policy      = data.aws_iam_policy_document.mlflow_artifacts.json
 }
 
@@ -160,40 +152,21 @@ resource "aws_iam_role_policy_attachment" "mlflow_artifacts" {
 }
 
 # ##############################
-# MLflow tracking server
+# MLflow app (serverless)
 # ##############################
-resource "aws_sagemaker_mlflow_tracking_server" "yolo" {
+resource "aws_sagemaker_mlflow_app" "yolo" {
   count = var.enable_experiment ? 1 : 0
 
-  tracking_server_name = local.prefix_name
-  role_arn             = aws_iam_role.mlflow[0].arn
+  name     = local.prefix_name
+  role_arn = aws_iam_role.mlflow[0].arn
 
   artifact_store_uri = "s3://${aws_s3_bucket.yolo.id}/${local.mlflow_prefix}/"
 
-  tracking_server_size = local.sagemaker_mlflow_server_size
-  mlflow_version       = local.sagemaker_mlflow_version
-
   # enable mlflow register sagemaker model
-  automatic_model_registration = true
+  model_registration_mode = "AutoModelRegistrationEnabled"
+
+  # make this the tracking backend Studio picks up by default in the domain
+  default_domain_id_list = [aws_sagemaker_domain.yolo.id]
 
   weekly_maintenance_window_start = "Sun:03:00"
 }
-*/
-
-# # ##############################
-# # MLflow
-# # ##############################
-# output "mlflow_tracking_server_arn" {
-#   description = "Tracking URI for mlflow.set_tracking_uri()."
-#   value       = one(aws_sagemaker_mlflow_tracking_server.yolo[*].arn)
-# }
-
-# output "mlflow_tracking_server_url" {
-#   description = "MLflow UI URL. Requires a presigned URL to open."
-#   value       = one(aws_sagemaker_mlflow_tracking_server.yolo[*].tracking_server_url)
-# }
-
-# output "mlflow_ui_command" {
-#   description = "CLI command that returns a presigned MLflow UI URL."
-#   value       = var.enable_experiment ? "aws sagemaker create-presigned-mlflow-tracking-server-url --tracking-server-name ${aws_sagemaker_mlflow_tracking_server.yolo[0].tracking_server_name} --region ${var.aws_region} --query AuthorizedUrl --output text" : null
-# }

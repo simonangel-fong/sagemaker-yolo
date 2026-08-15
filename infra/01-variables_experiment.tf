@@ -6,7 +6,7 @@
 variable "enable_experiment" {
   description = "Whether to enable studio notebook space and MLflow tracking server."
   type        = bool
-  default     = false
+  default     = true
 }
 
 # ##############################
