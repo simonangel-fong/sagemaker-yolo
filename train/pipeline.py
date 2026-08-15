@@ -36,19 +36,20 @@ from sagemaker.serve.model_builder import ModelBuilder
 from sagemaker.mlops.workflow.model_step import ModelStep
 from sagemaker.mlops.workflow.condition_step import ConditionStep
 from sagemaker.core.workflow.conditions import ConditionGreaterThanOrEqualTo
-from sagemaker.core.workflow.parameters import ParameterFloat, ParameterInteger
+from sagemaker.core.workflow.parameters import ParameterFloat, ParameterString
 from sagemaker.core.workflow.properties import PropertyFile
 from sagemaker.core.workflow.functions import JsonGet
 
-try:  # `python train/pipeline.py` and `python -m train.pipeline` both work
+# import config
+try: 
     from train import config
 except ImportError:
     import config
 
+# pipeline name
 PIPELINE_NAME = "sakemaker-yolo-pipeline"
 
-# Overridable per execution. Everything else in hyperparams.json is passed to
-# the training job as-is.
+# Overridable per execution.
 TUNABLE = ("epochs", "imgsz", "batch")
 
 
@@ -63,11 +64,6 @@ def build_pipeline(
 ) -> Pipeline:
     """
     Build the pipeline definition.
-
-    `hyperparameters` must carry at least epochs/imgsz/batch; extra keys from a
-    wider sweep are forwarded to train.py untouched. epochs/imgsz/batch become
-    pipeline parameters so a single execution can override them without
-    redefining the pipeline; the rest are baked into the definition.
     """
     pipeline_session = session or PipelineSession()
     region = region or Session().boto_region_name
@@ -78,9 +74,9 @@ def build_pipeline(
     # ##############################
     # Pipeline parameters
     # ##############################
-    param_epochs = ParameterInteger("Epochs", hyperparameters["epochs"])
-    param_imgsz = ParameterInteger("ImageSize", hyperparameters["imgsz"])
-    param_batch = ParameterInteger("Batch", hyperparameters["batch"])
+    param_epochs = ParameterString("Epochs", str(hyperparameters["epochs"]))
+    param_imgsz = ParameterString("ImageSize", str(hyperparameters["imgsz"]))
+    param_batch = ParameterString("Batch", str(hyperparameters["batch"]))
     param_min_map = ParameterFloat("MinMap", config.MIN_MAP)
 
     # #########################################################
@@ -106,6 +102,7 @@ def build_pipeline(
     # #########################################################
     # 1. ProcessingStep
     # #########################################################
+    # script processor to process data
     processor = ScriptProcessor(
         image_uri=sklearn_image,
         command=["python3"],
@@ -115,8 +112,11 @@ def build_pipeline(
         sagemaker_session=pipeline_session,
     )
 
+    # script processor script
     process_args = processor.run(
+        # script to execute
         code="steps/preprocess.py",
+        # data sources
         inputs=[
             ProcessingInput(
                 input_name="yolo",
@@ -128,6 +128,7 @@ def build_pipeline(
                 ),
             )
         ],
+        # output files
         outputs=[
             ProcessingOutput(
                 output_name="split",
@@ -148,14 +149,17 @@ def build_pipeline(
         ],
     )
 
+    # define a task to run script processor
     step_process = ProcessingStep(
         name="ProcessYolo",
         step_args=process_args,
     )
 
+    # get split uri
     split_uri = (
         step_process.properties.ProcessingOutputConfig.Outputs["split"].S3Output.S3Uri
     )
+    # get config uri
     config_uri = (
         step_process.properties.ProcessingOutputConfig.Outputs["config"].S3Output.S3Uri
     )
@@ -163,10 +167,12 @@ def build_pipeline(
     # #########################################################
     # 2. TrainingStep
     # #########################################################
-    # tunables as parameters, everything else from the file
+    # construct param
     train_hyperparameters = {
         key: value for key, value in hyperparameters.items() if key not in TUNABLE
     }
+
+    # load param
     train_hyperparameters.update(
         {
             "epochs": param_epochs,
@@ -175,12 +181,13 @@ def build_pipeline(
         }
     )
 
-    # recorded on the model so the artifact outlives the tracking server
+    # load provenance
     if provenance:
         train_hyperparameters["provenance"] = json.dumps(
             provenance, separators=(",", ":")
         )
 
+    # construct trainer
     trainer = ModelTrainer(
         training_image=train_image,
         role=role,
@@ -189,35 +196,37 @@ def build_pipeline(
             instance_count=1,
         ),
         sagemaker_session=pipeline_session,
-        # without this the model lands in the account default bucket
+        # custom output
         output_data_config=OutputDataConfig(
             s3_output_path=f"s3://{bucket}/{config.PREFIX}/model",
         ),
-        # ultralytics and the pretrained weights are baked into the image,
-        # so only the entry script is uploaded
+        # local entry point script 
         source_code=SourceCode(
             source_dir="steps",
             entry_script="train.py",
         ),
         hyperparameters=train_hyperparameters,
         input_data_config=[
-            # mounted at /opt/ml/input/data/split -- where data.yaml points
+            # mounted at /opt/ml/input/data/split
             InputData(channel_name="split", data_source=split_uri),
-            # mounted at /opt/ml/input/data/config -- holds data.yaml
+            # mounted at /opt/ml/input/data/config
             InputData(channel_name="config", data_source=config_uri),
         ],
     )
 
+    # launch train job
     step_train = TrainingStep(
         name="TrainYolo",
         step_args=trainer.train(),
     )
 
+    # get model artifact
     model_artifacts = step_train.properties.ModelArtifacts.S3ModelArtifacts
 
     # #########################################################
     # 3. EvaluationStep
     # #########################################################
+    # construct script processor for eval
     eval_processor = ScriptProcessor(
         image_uri=train_image,
         command=["python3"],
@@ -227,11 +236,13 @@ def build_pipeline(
         sagemaker_session=pipeline_session,
     )
 
+    # define eval script
     eval_args = eval_processor.run(
         code="steps/evaluate.py",
         # evaluate at the size the model was trained at
-        arguments=["--imgsz", param_imgsz.to_string()],
+        arguments=["--imgsz", param_imgsz],
         inputs=[
+            # model as input
             ProcessingInput(
                 input_name="model",
                 s3_input=ProcessingS3Input(
@@ -241,6 +252,7 @@ def build_pipeline(
                     s3_input_mode="File",
                 ),
             ),
+            # split as input
             ProcessingInput(
                 input_name="split",
                 s3_input=ProcessingS3Input(
@@ -250,6 +262,7 @@ def build_pipeline(
                     s3_input_mode="File",
                 ),
             ),
+            # config as input
             ProcessingInput(
                 input_name="config",
                 s3_input=ProcessingS3Input(
@@ -261,6 +274,7 @@ def build_pipeline(
             ),
         ],
         outputs=[
+            # eval artifacts as output
             ProcessingOutput(
                 output_name="evaluation",
                 s3_output=ProcessingS3Output(
@@ -272,22 +286,24 @@ def build_pipeline(
         ],
     )
 
-    # lets the condition below read a value out of evaluation.json
+    # evaluation.json
     evaluation_report = PropertyFile(
         name="EvaluationReport",
         output_name="evaluation",
         path="evaluation.json",
     )
 
+    # define a task to run script
     step_evaluate = ProcessingStep(
         name="EvaluateYolo",
         step_args=eval_args,
         property_files=[evaluation_report],
     )
 
-    # ---------------------------------------------------------
+    # #########################################################
     # 4. Register model
-    # ---------------------------------------------------------
+    # #########################################################
+    # construct model builder
     model_builder = ModelBuilder(
         s3_model_data_url=model_artifacts,
         image_uri=inference_image,
@@ -295,6 +311,7 @@ def build_pipeline(
         sagemaker_session=pipeline_session,
     )
 
+    # registers machine learning model into Model Package Group
     register_args = model_builder.register(
         model_package_group_name=config.MODEL_PACKAGE_GROUP,
         content_types=["application/x-image"],
@@ -305,16 +322,19 @@ def build_pipeline(
         approval_status="PendingManualApproval",
     )
 
+    # define a task to register model
     step_register = ModelStep(
         name="RegisterYolo",
         step_args=register_args,
     )
 
-    # ---------------------------------------------------------
-    # 5. ConditionStep: register only when the model is good enough
-    # ---------------------------------------------------------
+    # #########################################################
+    # 5. ConditionStep: register only when metrics is above threhold
+    # #########################################################
+    # define condition step
     step_condition = ConditionStep(
         name="CheckMap",
+        # condition
         conditions=[
             ConditionGreaterThanOrEqualTo(
                 left=JsonGet(
@@ -325,21 +345,21 @@ def build_pipeline(
                 right=param_min_map,
             )
         ],
-        # below the threshold nothing runs, and the execution still succeeds
-        if_steps=[step_register],
-        else_steps=[],
+        # , and the execution still succeeds
+        if_steps=[step_register], # register step when meet condition
+        else_steps=[], # below the threshold nothing runs
     )
 
+    # return a pipeline class
     return Pipeline(
         name=PIPELINE_NAME,
         sagemaker_session=pipeline_session,
         parameters=[param_epochs, param_imgsz, param_batch, param_min_map],
         steps=[
-            step_process,
-            step_train,
-            step_evaluate,
-            # step_register runs inside this condition
-            step_condition,
+            step_process, # data process
+            step_train, # train model
+            step_evaluate, # eval
+            step_condition, # condition, run step_register if sucdeed
         ],
     )
 
@@ -375,6 +395,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # get parameters
     args = parse_args(argv)
 
     try:
@@ -393,6 +414,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"hyperparams {config.describe(hyperparameters, provenance)}")
 
+    # define pipeline
     pipeline = build_pipeline(
         role=args.role_arn,
         bucket=args.bucket,
@@ -405,6 +427,7 @@ def main(argv: list[str] | None = None) -> int:
         print(pipeline.definition())
         return 0
 
+    # execute pipeline
     pipeline.upsert(role_arn=args.role_arn)
     execution = pipeline.start()
     print(f"execution  {execution.arn}")
@@ -418,4 +441,5 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    # entry point; exit if error.
     raise SystemExit(main())

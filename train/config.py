@@ -18,9 +18,6 @@ SUPPORTED_SCHEMAS = (1,)
 # ##############################
 # Metric keys
 # ##############################
-# The same metric under three spellings: ultralytics emits the parenthesised
-# form, MLflow strips the parens because they are illegal in metric names, and
-# evaluation.json uses the bare name the ConditionStep reads.
 METRIC = "mAP50-95"
 METRIC_ULTRALYTICS = "metrics/mAP50-95(B)"
 METRIC_MLFLOW = "metrics/mAP50-95B"
@@ -28,8 +25,7 @@ METRIC_MLFLOW = "metrics/mAP50-95B"
 # ##############################
 # Gates
 # ##############################
-# Register only above this. Matches MIN_MAP in notebook/code/tracking.py, so a
-# model the notebook rejects cannot be registered by the pipeline instead.
+# Threhold to register.
 MIN_MAP = 0.70
 
 # ##############################
@@ -52,19 +48,17 @@ TRAIN_INSTANCE_TYPE = "ml.g5.xlarge"
 # ##############################
 # Hyperparameters
 # ##############################
-# Required in every hyperparams.json. `seed` and any swept axis are optional
-# and passed through untouched.
+# Required in every hyperparams.json.
 REQUIRED_HYPERPARAMS = ("epochs", "imgsz", "batch")
 
-# Sanity bounds. These catch a corrupted or hand-edited file, not a bad model:
-# a wrong-but-plausible value is the sweep's problem, an epochs of -1 is ours.
+# Sanity bounds.
 BOUNDS = {
     "epochs": (1, 1000),
     "imgsz": (32, 4096),
     "batch": (1, 512),
 }
 
-# Used when the file is missing and the caller opted out of it.
+# Default
 DEFAULT_HYPERPARAMS = {"epochs": 10, "imgsz": 640, "batch": 8}
 
 # How to regenerate the file, quoted in every failure below.
@@ -82,25 +76,23 @@ def load_hyperparams(path: Path = HYPERPARAMS_PATH) -> tuple[dict, dict]:
     """
     Read and validate the hyperparameter contract.
 
-    Returns (hyperparameters, provenance). The hyperparameters dict goes
-    straight to ModelTrainer, so an unknown key added by a wider sweep flows
-    through without a code change here.
-
-    Raises HyperparamsError rather than returning defaults. A CI-triggered run
-    must fail loudly on a bad file -- silently training the wrong model for an
-    hour and reporting success is the worse outcome.
+    Returns (hyperparameters, provenance). 
     """
+    # invalid path
     if not path.exists():
         raise HyperparamsError(f"{path} not found. {_REGENERATE}")
 
+    # invalid json file
     try:
         document = json.loads(path.read_text())
     except json.JSONDecodeError as exc:
         raise HyperparamsError(f"{path} is not valid JSON: {exc}. {_REGENERATE}") from exc
 
+    # invalid json object
     if not isinstance(document, dict):
         raise HyperparamsError(f"{path} must contain a JSON object. {_REGENERATE}")
 
+    # invalid shcema
     schema = document.get("schema")
     if schema not in SUPPORTED_SCHEMAS:
         raise HyperparamsError(
@@ -108,12 +100,14 @@ def load_hyperparams(path: Path = HYPERPARAMS_PATH) -> tuple[dict, dict]:
             "The file was written by a different version of export_hyperparams()."
         )
 
+    # invalid param
     hyperparams = document.get("hyperparameters")
     if not isinstance(hyperparams, dict) or not hyperparams:
         raise HyperparamsError(
             f"{path} has no 'hyperparameters' object. {_REGENERATE}"
         )
 
+    # key param missing
     missing = [key for key in REQUIRED_HYPERPARAMS if key not in hyperparams]
     if missing:
         raise HyperparamsError(
@@ -122,6 +116,7 @@ def load_hyperparams(path: Path = HYPERPARAMS_PATH) -> tuple[dict, dict]:
 
     validated = {key: _check(path, key, value) for key, value in hyperparams.items()}
 
+    # invalid provenance
     provenance = document.get("provenance", {})
     if not isinstance(provenance, dict):
         raise HyperparamsError(f"{path} has a non-object 'provenance'.")
