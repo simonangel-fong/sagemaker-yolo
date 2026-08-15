@@ -8,7 +8,6 @@ locals {
 # IAM policy: MLflow access
 # ##############################
 data "aws_iam_policy_document" "mlflow_access" {
-  count = var.enable_experiment ? 1 : 0
 
   # allow the studio execution role to log runs against the app
   statement {
@@ -17,7 +16,7 @@ data "aws_iam_policy_document" "mlflow_access" {
 
     actions = ["sagemaker-mlflow:*"]
 
-    resources = [aws_sagemaker_mlflow_app.yolo[0].arn]
+    resources = [aws_sagemaker_mlflow_app.yolo.arn]
   }
 
   # allow discovery of the app from sagemaker
@@ -36,18 +35,14 @@ data "aws_iam_policy_document" "mlflow_access" {
 }
 
 resource "aws_iam_policy" "mlflow_access" {
-  count = var.enable_experiment ? 1 : 0
-
   name        = "${local.prefix_name}-mlflow-access"
   description = "Studio execution role access to the MLflow app."
-  policy      = data.aws_iam_policy_document.mlflow_access[0].json
+  policy      = data.aws_iam_policy_document.mlflow_access.json
 }
 
 resource "aws_iam_role_policy_attachment" "mlflow_access" {
-  count = var.enable_experiment ? 1 : 0
-
   role       = aws_iam_role.sagemaker_execution.name
-  policy_arn = aws_iam_policy.mlflow_access[0].arn
+  policy_arn = aws_iam_policy.mlflow_access.arn
 }
 
 
@@ -55,8 +50,6 @@ resource "aws_iam_role_policy_attachment" "mlflow_access" {
 # IAM role: MLflow app role
 # ##############################
 resource "aws_iam_role" "mlflow" {
-  count = var.enable_experiment ? 1 : 0
-
   name = "${local.prefix_name}-role-mlflow"
 
   assume_role_policy = jsonencode({
@@ -137,28 +130,22 @@ data "aws_iam_policy_document" "mlflow_artifacts" {
 }
 
 resource "aws_iam_policy" "mlflow_artifacts" {
-  count = var.enable_experiment ? 1 : 0
-
   name        = "${local.prefix_name}-mlflow-artifacts"
   description = "MLflow app access to the artifact store."
   policy      = data.aws_iam_policy_document.mlflow_artifacts.json
 }
 
 resource "aws_iam_role_policy_attachment" "mlflow_artifacts" {
-  count = var.enable_experiment ? 1 : 0
-
-  role       = aws_iam_role.mlflow[0].name
-  policy_arn = aws_iam_policy.mlflow_artifacts[0].arn
+  role       = aws_iam_role.mlflow.name
+  policy_arn = aws_iam_policy.mlflow_artifacts.arn
 }
 
 # ##############################
 # MLflow app (serverless)
 # ##############################
 resource "aws_sagemaker_mlflow_app" "yolo" {
-  count = var.enable_experiment ? 1 : 0
-
   name     = local.prefix_name
-  role_arn = aws_iam_role.mlflow[0].arn
+  role_arn = aws_iam_role.mlflow.arn
 
   artifact_store_uri = "s3://${aws_s3_bucket.yolo.id}/${local.mlflow_prefix}/"
 
