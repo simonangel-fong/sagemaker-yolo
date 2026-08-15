@@ -411,25 +411,35 @@ def tracking_uri(name_prefix: str = "sagemaker-yolo") -> str:
     """
     Tracking URI.
 
-    On SageMaker the URI is the MLflow tracking server ARN, looked up by name
-    so the account id and region do not have to be hardcoded.
-    MLFLOW_TRACKING_URI wins if set.
-    """
-    uri = os.environ.get("MLFLOW_TRACKING_URI")
-    if uri:
-        return uri
+    On SageMaker the URI is the MLflow app ARN, looked up by name so the account
+    id and region do not have to be hardcoded. The serverless app replaced the
+    always-on tracking server, so apps are tried first; the server lookup stays
+    as a fallback for accounts that have not migrated yet.
 
+    MLFLOW_TRACKING_URI wins if set -- but a stale value pointing at a deleted
+    tracking server yields a confusing 403 rather than a not-found, so an ARN
+    for a resource of the wrong kind is ignored instead of trusted.
+    """
     import boto3
 
-    servers = boto3.client("sagemaker").list_mlflow_tracking_servers()[
-        "TrackingServerSummaries"
-    ]
+    client = boto3.client("sagemaker")
 
+    uri = os.environ.get("MLFLOW_TRACKING_URI")
+    if uri and ":mlflow-tracking-server/" not in uri:
+        return uri
+
+    apps = client.list_mlflow_apps()["Summaries"]
+    for app in apps:
+        if app["Name"].startswith(name_prefix):
+            return app["Arn"]
+
+    servers = client.list_mlflow_tracking_servers()["TrackingServerSummaries"]
     for server in servers:
         if server["TrackingServerName"].startswith(name_prefix):
             return server["TrackingServerArn"]
 
     raise RuntimeError(
-        f"no MLflow tracking server starting with {name_prefix!r}; "
-        f"found {[s['TrackingServerName'] for s in servers]}"
+        f"no MLflow app or tracking server starting with {name_prefix!r}; "
+        f"found apps {[a['Name'] for a in apps]} and "
+        f"servers {[s['TrackingServerName'] for s in servers]}"
     )
