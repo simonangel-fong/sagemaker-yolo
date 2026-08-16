@@ -1,12 +1,20 @@
-goal
+# Sagemaker yolo - CI/CD pipeline
 
-- create cicd
+[Back](../README.md)
+
+- [Sagemaker yolo - CI/CD pipeline](#sagemaker-yolo---cicd-pipeline)
+  - [CD/CD pipeline](#cdcd-pipeline)
+    - [Build lambda image workflow](#build-lambda-image-workflow)
+    - [Build train image workflow](#build-train-image-workflow)
+    - [Deploy infrastructure workflow](#deploy-infrastructure-workflow)
+    - [Destroy infrastructure workflow](#destroy-infrastructure-workflow)
+  - [GitHub Action variables and secrets](#github-action-variables-and-secrets)
 
 ---
 
-cicd
+## CD/CD pipeline
 
-## Lambda Image workflow
+### Build lambda image workflow
 
 - name: build lambda image
 - Trigger:
@@ -20,7 +28,7 @@ cicd
 
 ---
 
-## Train Image workflow
+### Build train image workflow
 
 - name: build train image
 - Trigger:
@@ -34,7 +42,7 @@ cicd
 
 ---
 
-## Infra deploy workflow
+### Deploy infrastructure workflow
 
 - name: infrastructure deploy
 - Trigger:
@@ -52,7 +60,7 @@ cicd
 
 ---
 
-## Infra destroy workflow
+### Destroy infrastructure workflow
 
 - name: infrastructure destroy
 - Trigger:
@@ -131,6 +139,5 @@ gh variable set ENABLE_EXPERIMENT --body "false"
 
 gh secret set CLOUDFLARE_API_TOKEN --body "<api_token>"
 gh secret set CLOUDFLARE_ZONE_ID --body "<zone_id>"
-
 
 ```

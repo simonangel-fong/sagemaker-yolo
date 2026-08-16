@@ -101,9 +101,6 @@ Train the same YOLO model with same dataset and same hyperparameters.
 
 ## Inference deployment
 
-CI/CD to automate
-
-
-```txt
-sagemaker serverless endpoint --> Lambda function URL --> Web App
-```
+1. Promote models
+2. serve promoted model with Sagemaker serverless endpoint.
+3. integrate endpoint with web application
