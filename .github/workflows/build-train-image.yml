@@ -1,4 +1,4 @@
-# Builds the Sagemaker train image.
+# Builds the SageMaker training image (PyTorch DLC + Ultralytics).
 name: build train image
 
 on:
@@ -6,8 +6,14 @@ on:
     branches: [master]
     paths:
       - train/Dockerfile
+      - train/.dockerignore
       - .github/workflows/build-train-image.yml
   workflow_dispatch:
+    inputs:
+      push:
+        description: Push the image to ECR (uncheck for a build-only dry run)
+        type: boolean
+        default: true
 
 concurrency:
   group: build-train-image-${{ github.ref }}
@@ -16,7 +22,7 @@ concurrency:
 env:
   AWS_REGION: ca-central-1
   PROJECT: sagemaker-yolo
-  # Deep Learning Container image id
+  # AWS Deep Learning Container registry account (base image source).
   DLC_ACCOUNT: "763104351884"
 
 permissions:
@@ -24,59 +30,90 @@ permissions:
   id-token: write # required to request the OIDC token
 
 jobs:
-  build:
+  build-train-image:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # The DLC base image is ~10 GB unpacked; the default runner disk is not
+      # enough once the build cache is layered on top.
       - name: Reclaim disk space
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
           sudo rm -rf /usr/local/share/boost "$AGENT_TOOLSDIRECTORY"
           df -h /
 
-      - name: Configure AWS credential
-        uses: aws-actions/configure-aws-credentials@v6
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_GH_OIDC_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Look up account id
-        id: acct
-        run: echo "id=$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_OUTPUT"
-
-      - name: Login AWS
-        uses: aws-actions/amazon-ecr-login@v2
+      # Logs in: both the AWS DLC registry to pull base image and the project registry to push train image
+      - name: Login to Amazon ECR
         id: ecr
+        uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64 # v2.1.6
         with:
-          registries: ${{ steps.acct.outputs.id }},${{ env.DLC_ACCOUNT }}
+          registries: ${{ env.DLC_ACCOUNT }}
 
-      - name: Setup buildx
-        uses: docker/setup-buildx-action@v4
+      - name: Resolve image reference
+        id: meta
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          repo="$REGISTRY/$PROJECT-train"
+          {
+            echo "repository=$repo"
+            echo "image=$repo:${GITHUB_SHA}"
+          } >> "$GITHUB_OUTPUT"
+
+      # confirm ecr repo exists
+      - name: Ensure ECR repository exists
+        run: |
+          aws ecr describe-repositories --repository-names "$PROJECT-train" >/dev/null 2>&1 \
+            || aws ecr create-repository \
+                 --repository-name "$PROJECT-train" \
+                 --image-scanning-configuration scanOnPush=true \
+                 --image-tag-mutability MUTABLE >/dev/null
+
+      - name: Setup Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
       - name: Build and push
-        uses: docker/build-push-action@v7
+        id: build
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: train
-          push: true
+          file: train/Dockerfile
+          push: ${{ github.event_name != 'workflow_dispatch' || inputs.push }}
           platforms: linux/amd64
+          # SageMaker rejects OCI image indexes; keep a single-manifest image.
           provenance: false
           sbom: false
           tags: |
-            ${{ steps.acct.outputs.id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.PROJECT }}-train:${{ github.sha }}
-            ${{ steps.acct.outputs.id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.PROJECT }}-train:latest
+            ${{ steps.meta.outputs.repository }}:${{ github.sha }}
+            ${{ steps.meta.outputs.repository }}:latest
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha,scope=train
           cache-to: type=gha,scope=train,mode=max
 
       - name: Summary
         env:
-          IMAGE: ${{ steps.acct.outputs.id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.PROJECT }}-train:${{ github.sha }}
+          IMAGE: ${{ steps.meta.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           {
             echo "### Training image"
             echo '```'
             echo "$IMAGE"
+            echo "$DIGEST"
             echo '```'
-            echo "Pass this to the pipeline as --train-image."
+            echo "Pass this to the pipeline as \`--train-image\`."
           } >> "$GITHUB_STEP_SUMMARY"

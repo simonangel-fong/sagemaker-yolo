@@ -1,0 +1,4 @@
+# The image only needs the Dockerfile; pipeline code runs on the client side
+# and training code is injected by SageMaker at job submission time.
+*
+!Dockerfile
