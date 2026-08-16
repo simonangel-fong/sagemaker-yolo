@@ -66,7 +66,7 @@ jobs:
       - name: Configure AWS credential
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ secrets.AWS_GH_OIDC_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_GH_TERRAFORM_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform init

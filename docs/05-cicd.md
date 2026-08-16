@@ -100,6 +100,10 @@ cicd
 terraform -chdir=infra output -raw github_actions_oidc_role_arn
 gh secret set AWS_GH_OIDC_ROLE_ARN --body "arn:aws:iam::099139718958:role/sagemaker-yolo-dev-github-actions-oidc-role"
 
+# gh terraform role
+terraform -chdir=infra output -raw github_terraform_role_arn
+gh secret set AWS_GH_OIDC_ROLE_ARN --body "arn:aws:iam::099139718958:role/sagemaker-yolo-dev-github-terraform-role"
+
 # ecr train repo
 terraform -chdir=infra output -raw ecr_train_repo
 # 099139718958.dkr.ecr.ca-central-1.amazonaws.com/sagemaker-yolo-train
