@@ -4,7 +4,7 @@
 # ECR: training image
 # ##############################
 resource "aws_ecr_repository" "train" {
-  name = "${var.project}-train"
+  name = "${local.project_name}-train"
 
   # let terraform destroy the repo even when images are still in it
   force_delete = true
@@ -42,10 +42,10 @@ resource "aws_ecr_lifecycle_policy" "train" {
 }
 
 # ##############################
-# ECR: predict image
+# ECR: inference image
 # ##############################
-resource "aws_ecr_repository" "predict" {
-  name = "${var.project}-predict"
+resource "aws_ecr_repository" "inference" {
+  name = "${local.project_name}-inference"
 
   # let terraform destroy the repo even when images are still in it
   force_delete = true
@@ -60,8 +60,8 @@ resource "aws_ecr_repository" "predict" {
   }
 }
 
-resource "aws_ecr_lifecycle_policy" "predict" {
-  repository = aws_ecr_repository.predict.name
+resource "aws_ecr_lifecycle_policy" "inference" {
+  repository = aws_ecr_repository.inference.name
 
   policy = jsonencode({
     rules = [

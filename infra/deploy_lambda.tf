@@ -1,20 +1,20 @@
 # lambda.tf
 
 # Image
-data "aws_ecr_image" "predict" {
+data "aws_ecr_image" "inference" {
   count = var.enable_deploy ? 1 : 0
 
-  repository_name = "${var.project}-predict"
+  repository_name = "${local.project_name}-inference"
   image_tag       = var.lambda_image_tag
 }
 
 # ##############################
 # IAM
 # ##############################
-resource "aws_iam_role" "lambda_predict" {
+resource "aws_iam_role" "lambda_inference" {
   count = var.enable_deploy ? 1 : 0
 
-  name = "${local.prefix_name}-lambda-predict-role"
+  name = "${local.prefix_name}-lambda-inference-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -31,7 +31,7 @@ resource "aws_iam_role" "lambda_predict" {
 resource "aws_iam_role_policy_attachment" "lambda_logs" {
   count = var.enable_deploy ? 1 : 0
 
-  role       = aws_iam_role.lambda_predict[0].name
+  role       = aws_iam_role.lambda_inference[0].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
@@ -58,21 +58,21 @@ resource "aws_iam_policy" "lambda_invoke_endpoint" {
 resource "aws_iam_role_policy_attachment" "lambda_invoke_endpoint" {
   count = var.enable_deploy ? 1 : 0
 
-  role       = aws_iam_role.lambda_predict[0].name
+  role       = aws_iam_role.lambda_inference[0].name
   policy_arn = aws_iam_policy.lambda_invoke_endpoint[0].arn
 }
 
 # ##############################
 # Function
 # ##############################
-resource "aws_lambda_function" "predict" {
+resource "aws_lambda_function" "inference" {
   count = var.enable_deploy ? 1 : 0
 
-  function_name = "${local.prefix_name}-predict"
-  role          = aws_iam_role.lambda_predict[0].arn
+  function_name = local.prefix_name
+  role          = aws_iam_role.lambda_inference[0].arn
 
   package_type = "Image"
-  image_uri    = data.aws_ecr_image.predict[0].image_uri
+  image_uri    = data.aws_ecr_image.inference[0].image_uri
   timeout      = 30
   memory_size  = 1024
 
@@ -90,10 +90,10 @@ resource "aws_lambda_function" "predict" {
   tags = local.default_tags
 }
 
-resource "aws_cloudwatch_log_group" "predict" {
+resource "aws_cloudwatch_log_group" "inference" {
   count = var.enable_deploy ? 1 : 0
 
-  name              = "/aws/lambda/${aws_lambda_function.predict[0].function_name}"
+  name              = "/aws/lambda/${aws_lambda_function.inference[0].function_name}"
   retention_in_days = 14
   tags              = local.default_tags
 }
@@ -101,9 +101,9 @@ resource "aws_cloudwatch_log_group" "predict" {
 # ##############################
 # Function URL
 # ##############################
-resource "aws_lambda_function_url" "predict" {
+resource "aws_lambda_function_url" "inference" {
   count = var.enable_deploy ? 1 : 0
 
-  function_name      = aws_lambda_function.predict[0].function_name
+  function_name      = aws_lambda_function.inference[0].function_name
   authorization_type = "NONE"
 }

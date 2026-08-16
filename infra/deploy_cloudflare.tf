@@ -17,12 +17,13 @@ data "aws_acm_certificate" "web" {
 resource "cloudflare_dns_record" "web" {
   count = var.enable_deploy ? 1 : 0
 
+  name    = local.dns_web
+  comment = "DNS for the YOLO web app"
   zone_id = var.cloudflare_zone_id
-  name    = var.web_domain
-  type    = "CNAME"
+
   content = aws_cloudfront_distribution.web[0].domain_name
+  type    = "CNAME"
+
   ttl     = 300
   proxied = false
-
-  comment = "CloudFront distribution for the YOLO web app"
 }

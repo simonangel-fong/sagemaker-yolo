@@ -26,7 +26,7 @@ resource "aws_cloudfront_distribution" "web" {
   comment             = "${local.prefix_name} yolo web app"
   price_class         = "PriceClass_100"
 
-  aliases = [var.web_domain]
+  aliases = [local.dns_web]
 
   # web
   origin {
@@ -38,8 +38,8 @@ resource "aws_cloudfront_distribution" "web" {
 
   # predict
   origin {
-    origin_id   = "lambda-predict"
-    domain_name = replace(replace(aws_lambda_function_url.predict[0].function_url, "https://", ""), "/", "")
+    origin_id   = "lambda-inference"
+    domain_name = replace(replace(aws_lambda_function_url.inference[0].function_url, "https://", ""), "/", "")
 
     custom_origin_config {
       http_port              = 80
@@ -61,7 +61,7 @@ resource "aws_cloudfront_distribution" "web" {
   # cache inference
   ordered_cache_behavior {
     path_pattern           = "/v1/*"
-    target_origin_id       = "lambda-predict"
+    target_origin_id       = "lambda-inference"
     viewer_protocol_policy = "https-only"
     allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     cached_methods         = ["GET", "HEAD"]

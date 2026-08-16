@@ -34,12 +34,9 @@ source_archive = f"{model_dir}/{archives[0]}"
 staging = tempfile.mkdtemp()
 
 with tarfile.open(source_archive) as tar:
-    # filter="data" is the 3.14 default and an error to omit there; passing it
-    # explicitly keeps this working whatever Python the container ships
     try:
         tar.extractall(staging, filter="data")
     except TypeError:
-        # filter arrived in 3.11.4; older containers ignore it
         tar.extractall(staging)
 
 print(f"unpacked   {source_archive}")
@@ -49,8 +46,8 @@ for name in sorted(os.listdir(staging)):
 # ##############################
 # Inject the handler
 # ##############################
-# SAGEMAKER_SUBMIT_DIRECTORY points the toolkit at /opt/ml/model/code, and
-# SAGEMAKER_PROGRAM names inference.py within it; both are set in terraform.
+# SAGEMAKER_SUBMIT_DIRECTORY: point to path /opt/ml/model/code
+# SAGEMAKER_PROGRAM: names inference.py within it; both are set in terraform.
 code_dir = f"{staging}/code"
 os.makedirs(code_dir, exist_ok=True)
 

@@ -12,7 +12,7 @@ resource "aws_sagemaker_model" "yolo" {
 
   # the PyTorch inference DLC
   container {
-    model_package_name = "arn:aws:sagemaker:${var.aws_region}:${data.aws_caller_identity.current.account_id}:model-package/${var.model_package_group}/${var.model_version}"
+    model_package_name = "arn:aws:sagemaker:${var.aws_region}:${data.aws_caller_identity.current.account_id}:model-package/${local.project_name}/${var.model_version}"
 
     environment = {
       SAGEMAKER_PROGRAM             = "inference.py"
@@ -54,7 +54,7 @@ resource "aws_sagemaker_endpoint_configuration" "yolo" {
 resource "aws_sagemaker_endpoint" "yolo" {
   count = var.enable_deploy ? 1 : 0
 
-  name                 = "${local.prefix_name}-yolo"
+  name                 = local.prefix_name
   endpoint_config_name = aws_sagemaker_endpoint_configuration.yolo[0].name
 
   tags = local.default_tags

@@ -17,10 +17,18 @@ gh secret set AWS_ROLE_ARN --body "arn:aws:iam::099139718958:role/sagemaker-yolo
 
 ```
 
-1. endpoint pipeline
+1. schedule train pipeline
 
-- trigger: train/
+- trigger: 
+  - 03:00 am
+  - manual
 
-3. infra dpeloy
+1. infra dpeloy
 
-- trigger: infra/, lambda/
+- trigger: 
+  - infra/
+  - manual
+
+1. infra destroy
+
+- manual

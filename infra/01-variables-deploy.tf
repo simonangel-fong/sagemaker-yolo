@@ -12,13 +12,6 @@ variable "enable_deploy" {
 # ##############################
 # Endpoint
 # ##############################
-variable "model_package_group" {
-  description = "Model package group the training pipeline registers into."
-  type        = string
-  default     = "sagemaker-yolo"
-}
-
-# the version must be Approved before it can be deployed
 variable "model_version" {
   description = "Model package version to deploy."
   type        = number
@@ -36,14 +29,10 @@ variable "lambda_image_tag" {
 }
 
 # ##############################
-# Web app
+# DNS
 # ##############################
-# Custom domain
-variable "web_domain" {
-  description = "Custom domain the web app is served on."
-  type        = string
-  default     = "yolo.arguswatcher.net"
-}
+# domain name
+
 
 variable "cloudflare_api_token" {
   description = "Cloudflare token with DNS edit rights on the zone."

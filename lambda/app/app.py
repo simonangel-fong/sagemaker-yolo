@@ -19,8 +19,8 @@ from fastapi.responses import JSONResponse
 from mangum import Mangum
 from pydantic import BaseModel, Field
 
-ENDPOINT = os.environ.get("ENDPOINT_NAME", "sagemaker-yolo-dev-yolo")
-MODEL = os.environ.get("MODEL_NAME", "yolo-car-plate")
+ENDPOINT = os.environ.get("ENDPOINT_NAME", "sagemaker-yolo-dev")
+MODEL = os.environ.get("MODEL_NAME", "sagemaker-yolo-dev")
 IMGSZ = int(os.environ.get("IMGSZ", "640"))
 CLASSES = json.loads(os.environ.get("CLASSES", '["car_plate"]'))
 ALLOW_ORIGIN = os.environ.get("ALLOW_ORIGIN", "*")
@@ -30,7 +30,7 @@ MAX_B64_BYTES = 6 * 1024 * 1024
 
 runtime = boto3.client("sagemaker-runtime")
 
-app = FastAPI(title="yolo-car-plate proxy", docs_url=None, redoc_url=None)
+app = FastAPI(title="sagemaker-yolo proxy", docs_url=None, redoc_url=None)
 
 # middlewares
 app.add_middleware(
