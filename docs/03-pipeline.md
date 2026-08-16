@@ -33,7 +33,7 @@ Commit it to git.
 
 ## Train image
 
-Build. The base is a private AWS registry, so log in first.
+Build. The base is a private AWS registry
 
 ```sh
 # login to the DLC registry
@@ -70,6 +70,10 @@ terraform -chdir=infra output -raw ecr_train_repo
 cd train/
 python pipeline.py --role-arn arn:aws:iam::099139718958:role/sagemaker-yolo-dev-sagemaker-execution-role --bucket sagemaker-yolo-dev-up68ac --train-image 099139718958.dkr.ecr.ca-central-1.amazonaws.com/sagemaker-yolo-train
 ```
+
+![sagemaker_pipeline01](./img/sagemaker_pipeline01.png)
+
+![sagemaker_pipeline02](./img/sagemaker_pipeline02.png)
 
 ---
 

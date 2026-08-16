@@ -33,5 +33,5 @@ output "lambda_function_url" {
 
 output "web_readiness_command" {
   description = "Check the predict route through CloudFront."
-  value       = var.enable_deploy ? "curl https://${var.web_domain}/v1/models/${var.web_model_name}" : null
+  value       = var.enable_deploy ? "curl https://${var.web_domain}/v1/models/${local.web_model_name}" : null
 }

@@ -44,8 +44,6 @@ resource "aws_ecr_lifecycle_policy" "train" {
 # ##############################
 # ECR: predict image
 # ##############################
-# The predict function outgrew a zip: FastAPI and its dependencies push the
-# package past Lambda's 250 MB unzipped limit, so it ships as a container.
 resource "aws_ecr_repository" "predict" {
   name = "${var.project}-predict"
 

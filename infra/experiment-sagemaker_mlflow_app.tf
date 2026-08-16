@@ -45,7 +45,6 @@ resource "aws_iam_role_policy_attachment" "mlflow_access" {
   policy_arn = aws_iam_policy.mlflow_access.arn
 }
 
-
 # ##############################
 # IAM role: MLflow app role
 # ##############################

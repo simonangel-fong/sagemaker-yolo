@@ -1,9 +1,37 @@
+# Sagemaker yolo - app deployment
+
+[Back](../README.md)
+
+- [Sagemaker yolo - app deployment](#sagemaker-yolo---app-deployment)
+  - [Promote model](#promote-model)
+  - [Dockerfile](#dockerfile)
+    - [Local app (no container)](#local-app-no-container)
+    - [Create ECR](#create-ecr)
+    - [Build](#build)
+  - [Push to ECR](#push-to-ecr)
+  - [Apply](#apply)
+
+---
+
 ## Promote model
 
 ```sh
+# list model
+aws sagemaker list-model-packages --model-package-group-name "sagemaker-yolo" --query "ModelPackageSummaryList[*].[ModelPackageArn, ModelPackageVersion, ModelApprovalStatus]" --output table
+# --------------------------------------------------------------------------------------------------------------
+# |                                              ListModelPackages                                             |
+# +-----------------------------------------------------------------------------+----+-------------------------+
+# |  arn:aws:sagemaker:ca-central-1:099139718958:model-package/sagemaker-yolo/5 |  5 |  PendingManualApproval  |
+# |  arn:aws:sagemaker:ca-central-1:099139718958:model-package/sagemaker-yolo/4 |  4 |  PendingManualApproval  |
+# |  arn:aws:sagemaker:ca-central-1:099139718958:model-package/sagemaker-yolo/3 |  3 |  PendingManualApproval  |
+# |  arn:aws:sagemaker:ca-central-1:099139718958:model-package/sagemaker-yolo/2 |  2 |  PendingManualApproval  |
+# |  arn:aws:sagemaker:ca-central-1:099139718958:model-package/sagemaker-yolo/1 |  1 |  PendingManualApproval  |
+# +-----------------------------------------------------------------------------+----+-------------------------+
+
+# approve to promote the model
 aws sagemaker update-model-package --model-package-arn arn:aws:sagemaker:ca-central-1:099139718958:model-package/sagemaker-yolo/2 --model-approval-status Approved
 # {
-    # "ModelPackageArn": "arn:aws:sagemaker:ca-central-1:099139718958:model-package/sagemaker-yolo/2"
+#     "ModelPackageArn": "arn:aws:sagemaker:ca-central-1:099139718958:model-package/sagemaker-yolo/2"
 # }
 
 ```
@@ -34,7 +62,7 @@ python -m test_local
 
 ---
 
-## ECR
+### Create ECR
 
 ```sh
 # create repo
@@ -46,7 +74,7 @@ terraform -chdir=infra output -raw ecr_predict_repo
 
 ---
 
-## Build
+### Build
 
 ```sh
 docker build -t yolo-predict lambda/
@@ -78,7 +106,8 @@ aws ecr batch-get-image --repository-name sagemaker-yolo-predict --region ca-cen
 ## Apply
 
 ```sh
-terraform -chdir=infra apply -auto-approve
+# deploy
+terraform -chdir=infra apply -auto-approve -var="enable_deploy=true"
 
 # readiness command
 terraform -chdir=infra output -raw web_readiness_command
@@ -87,3 +116,9 @@ terraform -chdir=infra output -raw web_readiness_command
 curl https://yolo.arguswatcher.net/v1/models/yolo-car-plate
 # {"name":"yolo-car-plate","classes":["car_plate"],"imgsz":640}
 ```
+
+- registered model
+
+![sagemaker_model01](./img/sagemaker_model01.png)
+
+![sagemaker_model02](./img/sagemaker_model02.png)
