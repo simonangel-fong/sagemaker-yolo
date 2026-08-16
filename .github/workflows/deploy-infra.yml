@@ -28,6 +28,7 @@ env:
   TF_VERSION: "1.15.8"
   TF_IN_AUTOMATION: "true"
   TF_CLI_ARGS: "-no-color"
+  PROJECT: "sagemaker-yolo"
 
 permissions:
   contents: read
@@ -35,12 +36,14 @@ permissions:
   pull-requests: write # to post the plan on the PR
 
 jobs:
-  terraform:
+  terraform-apply:
     runs-on: ubuntu-latest
     environment: dev
     env:
       TF_VAR_env: ${{ vars.ENV }}
       TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+      # Required by infra/project-cicd_terraform.tf; same bucket as the backend.
+      TF_VAR_tf_state_bucket: ${{ vars.TF_STATE_BUCKET }}
       TF_VAR_repo_owner_id: ${{ vars.REPO_OWNER_ID }}
       TF_VAR_repo_id: ${{ vars.REPO_ID }}
       TF_VAR_vpc_id: ${{ vars.VPC_ID }}
@@ -67,7 +70,16 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform init
-        run: terraform -chdir=infra init -input=false -backend-config=backend.hcl
+        run: |
+          set -euo pipefail
+
+          terraform -chdir=infra init \
+            -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=${{ env.PROJECT }}/${{ env.TF_VAR_env }}/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
 
       - name: Terraform fmt
         run: terraform -chdir=infra fmt -check -recursive
