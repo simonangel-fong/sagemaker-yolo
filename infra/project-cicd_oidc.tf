@@ -2,6 +2,12 @@
 # GitHub Actions assumes this role via OIDC to build and push ECR images.
 # No long-lived access keys are stored in the repository.
 
+locals {
+  # "owner/name" split into its two halves for the OIDC subject claim.
+  github_owner     = split("/", var.github_repository)[0]
+  github_repo_name = split("/", var.github_repository)[1]
+}
+
 # ##############################
 # OIDC provider
 # ##############################
@@ -29,10 +35,23 @@ data "aws_iam_policy_document" "github_actions_assume" {
     }
 
     # Only workflows on this repository may assume the role.
+    #
+    # Repositories created on or after 2026-07-15 emit an immutable subject
+    # claim that appends the permanent numeric owner and repository IDs after
+    # each name: repo:owner@<owner-id>/name@<repo-id>:<context>. Binding to the
+    # IDs is the point of the immutable claim -- deleting this repository and
+    # recreating one with the same name yields new IDs, so a stale trust policy
+    # cannot be used to mint tokens for the replacement.
+    #
+    # The subject is not narrowed to a branch: that would block
+    # workflow_dispatch runs from any other ref.
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:*"]
+
+      values = [
+        "repo:${local.github_owner}@${var.github_owner_id}/${local.github_repo_name}@${var.github_repository_id}:*",
+      ]
     }
   }
 }

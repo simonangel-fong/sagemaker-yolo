@@ -11,7 +11,13 @@ cicd
 - trigger: train/dockerfile
 - push ecr
 
-2. endpoint pipeline
+```sh
+terraform -chdir=infra output -raw github_actions_role_arn
+gh secret set AWS_ROLE_ARN --body "arn:aws:iam::099139718958:role/sagemaker-yolo-dev-github-actions-role"
+
+```
+
+1. endpoint pipeline
 
 - trigger: train/
 
