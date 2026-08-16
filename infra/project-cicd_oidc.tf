@@ -32,7 +32,7 @@ data "aws_iam_policy_document" "github_actions_assume" {
       variable = "token.actions.githubusercontent.com:sub"
 
       values = [
-        "repo:${local.github_owner}@${var.github_owner_id}/${local.github_repo}@${var.github_repo_id}:*",
+        "repo:${local.repo_owner}@${var.repo_owner_id}/${local.repo_name}@${var.repo_id}:*",
       ]
     }
   }
@@ -75,7 +75,7 @@ data "aws_iam_policy_document" "github_actions_ecr" {
 
     resources = [
       aws_ecr_repository.train.arn,
-      aws_ecr_repository.inference.arn,
+      aws_ecr_repository.lambda.arn,
     ]
   }
 
@@ -121,7 +121,7 @@ data "aws_iam_policy_document" "github_actions_ecr" {
         "lambda:UpdateFunctionCode",
       ]
 
-      resources = [aws_lambda_function.inference[0].arn]
+      resources = [aws_lambda_function.lambda[0].arn]
     }
   }
 }

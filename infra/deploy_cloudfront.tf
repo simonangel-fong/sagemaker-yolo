@@ -38,8 +38,8 @@ resource "aws_cloudfront_distribution" "web" {
 
   # predict
   origin {
-    origin_id   = "lambda-inference"
-    domain_name = replace(replace(aws_lambda_function_url.inference[0].function_url, "https://", ""), "/", "")
+    origin_id   = "lambda-lambda"
+    domain_name = replace(replace(aws_lambda_function_url.lambda[0].function_url, "https://", ""), "/", "")
 
     custom_origin_config {
       http_port              = 80
@@ -58,10 +58,10 @@ resource "aws_cloudfront_distribution" "web" {
     cache_policy_id        = data.aws_cloudfront_cache_policy.optimized.id
   }
 
-  # cache inference
+  # cache lambda
   ordered_cache_behavior {
     path_pattern           = "/v1/*"
-    target_origin_id       = "lambda-inference"
+    target_origin_id       = "lambda-lambda"
     viewer_protocol_policy = "https-only"
     allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
     cached_methods         = ["GET", "HEAD"]

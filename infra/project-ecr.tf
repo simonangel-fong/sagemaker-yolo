@@ -42,10 +42,10 @@ resource "aws_ecr_lifecycle_policy" "train" {
 }
 
 # ##############################
-# ECR: inference image
+# ECR: lambda image
 # ##############################
-resource "aws_ecr_repository" "inference" {
-  name = "${local.project_name}-inference"
+resource "aws_ecr_repository" "lambda" {
+  name = "${local.project_name}-lambda"
 
   # let terraform destroy the repo even when images are still in it
   force_delete = true
@@ -60,8 +60,8 @@ resource "aws_ecr_repository" "inference" {
   }
 }
 
-resource "aws_ecr_lifecycle_policy" "inference" {
-  repository = aws_ecr_repository.inference.name
+resource "aws_ecr_lifecycle_policy" "lambda" {
+  repository = aws_ecr_repository.lambda.name
 
   policy = jsonencode({
     rules = [

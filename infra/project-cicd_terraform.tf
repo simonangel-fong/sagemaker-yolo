@@ -24,7 +24,7 @@ data "aws_iam_policy_document" "github_terraform_assume" {
       variable = "token.actions.githubusercontent.com:sub"
 
       values = [
-        "repo:${local.github_owner}@${var.github_owner_id}/${local.github_repo}@${var.github_repo_id}:*",
+        "repo:${local.repo_owner}@${var.repo_owner_id}/${local.repo_name}@${var.repo_id}:*",
       ]
     }
   }

@@ -13,11 +13,11 @@ variable "tf_state_bucket" {
   type        = string
 }
 
-variable "github_owner_id" {
+variable "repo_owner_id" {
   description = "GitHub repo owner id"
 }
 
-variable "github_repo_id" {
+variable "repo_id" {
   description = "GitHub repo id"
 }
 

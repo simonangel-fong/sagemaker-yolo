@@ -29,8 +29,8 @@ output "ecr_train_repo" {
   value = aws_ecr_repository.train.repository_url
 }
 
-output "ecr_inference_repo" {
-  value = aws_ecr_repository.inference.repository_url
+output "ecr_lambda_repo" {
+  value = aws_ecr_repository.lambda.repository_url
 }
 
 # ##############################

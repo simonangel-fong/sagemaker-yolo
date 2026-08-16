@@ -11,9 +11,9 @@ locals {
     Env       = var.env
     ManagedBy = "Terraform"
   }
-  github_owner    = "simonangel-fong"
-  github_repo     = "sagemaker-yolo"
-  github_repo_url = "https://github.com/${local.github_owner}/${local.github_repo}.git"
+  repo_owner = "simonangel-fong"
+  repo_name  = "sagemaker-yolo"
+  repo_url   = "https://github.com/${local.repo_owner}/${local.repo_name}.git"
 
   # ##############################
   # Experiments

@@ -27,7 +27,7 @@ resource "aws_sagemaker_space" "notebook" {
       }
 
       code_repository {
-        repository_url = local.github_repo_url
+        repository_url = local.repo_url
       }
     }
 
