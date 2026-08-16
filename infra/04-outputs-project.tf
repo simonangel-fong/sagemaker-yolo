@@ -32,3 +32,11 @@ output "ecr_train_repo" {
 output "ecr_predict_repo" {
   value = aws_ecr_repository.predict.repository_url
 }
+
+# ##############################
+# CI/CD
+# ##############################
+# Store this as the AWS_ROLE_ARN secret (or variable) in the GitHub repository.
+output "github_actions_role_arn" {
+  value = aws_iam_role.github_actions.arn
+}

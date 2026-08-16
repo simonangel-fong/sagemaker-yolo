@@ -16,6 +16,11 @@ variable "git_repository_url" {
   type        = string
 }
 
+variable "github_repository" {
+  description = "GitHub repository in owner/name form, trusted by the CI OIDC role."
+  type        = string
+}
+
 # ##############################
 # Providers: aws
 # ##############################

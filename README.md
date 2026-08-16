@@ -1,8 +1,17 @@
-# Object Detection Project
+# License plate recognition with `Amazon SageMaker`
 
 An `Amazon SageMaker` project that trains and deploys a object detection model(`YOLO`) with `MLOps` workflow.
 
 ![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge&logo=terraform&logoColor=white&style=plastic) ![AWS](https://img.shields.io/badge/AWS-FF9900?style=for-the-badge&logo=amazonwebservices&logoColor=white&style=plastic) ![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge&logo=Cloudflare&logoColor=white&style=plastic) ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white&style=plastic) ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white&style=plastic) ![YOLO](https://img.shields.io/badge/YOLO-111F68?logo=yolo&logoColor=fff&style=plastic) ![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff&style=plastic)
+
+- [License plate recognition with `Amazon SageMaker`](#license-plate-recognition-with-amazon-sagemaker)
+  - [Business Challenge](#business-challenge)
+  - [License plate recognition application](#license-plate-recognition-application)
+  - [Model training with `Amazon Sagemaker Studio`](#model-training-with-amazon-sagemaker-studio)
+    - [MLops Pipeline](#mlops-pipeline)
+    - [`Jupyter notebook` \& `MLflow`](#jupyter-notebook--mlflow)
+    - [Comparison: `cpu` vs `gpu`](#comparison-cpu-vs-gpu)
+  - [Inference deployment](#inference-deployment)
 
 ---
 
@@ -18,23 +27,40 @@ This project demonstrates an end-to-end MLOps workflow by training, deploying, a
 
 ## License plate recognition application
 
+- Architecture diagram
+
+![architecture](./docs/img/architecture.png)
+
+- Application
+
 ![yolo_plate_detect01](./docs/img/yolo_plate_detect01.png)
 
 > OCR feature is not included
 
 ---
 
-## Architecture diagram
+## Model training with `Amazon Sagemaker Studio`
 
-![architecture](./docs/img/architecture.png)
+Train the `YOLO` model with `Amazon Sagemaker Studio`
+
+### MLops Pipeline
+
+1. Data Collection: collect images of license plate
+2. Feature Engineering: label images
+3. Model Training and Experiment Tracking: Run training code with `Sagemaker pipeline` and log metrics by `MLflow`
+4. Evaluate model
+5. Package and deploy model: Serve model with `Sagemaker serverless endpoint` and integrate it with web application.
+6. Integrate **inference endpoint** with **web application**.
+
+- Sagemaker pipeline to automate training
+
+![sagemaker_pipeline02](./docs/img/sagemaker_pipeline02.png)
 
 ---
 
-## Model training
+### `Jupyter notebook` & `MLflow`
 
-Train the `YOLO` model with `Amazon Sagemaker`
-
-- `Jupyter notebook`: Train `YOLO` model
+- `Jupyter notebook`: train `YOLO` model
 
 ![notebook_train_cpu01](./docs/img/notebook_train_cpu01.png)
 
@@ -48,14 +74,16 @@ Train the `YOLO` model with `Amazon Sagemaker`
 
 ---
 
-## Comparison: `cpu` vs `gpu`
+### Comparison: `cpu` vs `gpu`
 
 Train the same YOLO model with same dataset and same hyperparameters.
 
-| Instance              | Specification | Rate per hour($) | Total min | Total cost($) |
-| --------------------- | ------------- | ---------------- | --------- | ------------- |
-| `ml.m5.xlarge(cpu)`   | 4vCPU, 16 GiB | 0.257            | 27.8      | 0.379         |
-| `ml.g4dn.xlarge(gpu)` | 4vCPU, 16 GiB | 0.818            | 2.2       | 0.029         |
+- Cost comparision
+
+| Instance              | Specification | GPU | Rate per hour($) | Total min | Total cost($) |
+| --------------------- | ------------- | --- | ---------------- | --------- | ------------- |
+| `ml.m5.xlarge(cpu)`   | 4vCPU, 16 GiB | N/A | 0.257            | 27.8      | 0.379         |
+| `ml.g4dn.xlarge(gpu)` | 4vCPU, 16 GiB | Yes | 0.818            | 2.2       | 0.029         |
 
 - train time
   - train with cpu: 27.8m
@@ -73,6 +101,9 @@ Train the same YOLO model with same dataset and same hyperparameters.
 
 ## Inference deployment
 
-deployment:
+CI/CD to automate
 
--
+
+```txt
+sagemaker serverless endpoint --> Lambda function URL --> Web App
+```
