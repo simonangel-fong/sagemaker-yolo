@@ -6,7 +6,7 @@
 variable "enable_deploy" {
   description = "Whether to enable deployment."
   type        = bool
-  default     = false
+  default     = true
 }
 
 # ##############################

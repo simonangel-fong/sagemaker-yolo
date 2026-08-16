@@ -19,12 +19,13 @@ data "aws_iam_policy_document" "github_terraform_assume" {
       values   = ["sts.amazonaws.com"]
     }
 
+    # Scoped to the `dev` environment
     condition {
-      test     = "StringLike"
+      test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
 
       values = [
-        "repo:${local.repo_owner}@${var.repo_owner_id}/${local.repo_name}@${var.repo_id}:*",
+        "${local.oidc_sub_prefix}:environment:${local.oidc_environment}",
       ]
     }
   }
@@ -42,6 +43,10 @@ resource "aws_iam_role_policy_attachment" "github_terraform_admin" {
   policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }
 
+# Redundant while AdministratorAccess is attached above, and kept deliberately:
+# it records the minimum this role needs on the backend, so dropping admin for a
+# least-privilege policy does not have to rediscover it. `s3:DeleteObject` is
+# required to clear the lock object under `use_lockfile=true`.
 data "aws_iam_policy_document" "github_terraform_state" {
   statement {
     sid     = "AllowStateBucketList"

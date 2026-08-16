@@ -1,0 +1,134 @@
+# Tears down
+name: destroy infra
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: Type the project name to confirm destruction
+        type: string
+        required: true
+      action:
+        description: Terraform action to run
+        type: choice
+        options: [plan-destroy, destroy]
+        default: plan-destroy
+
+concurrency:
+  group: deploy-infra
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ca-central-1
+  TF_VERSION: "1.15.8"
+  TF_IN_AUTOMATION: "true"
+  TF_CLI_ARGS: "-no-color"
+  PROJECT: "sagemaker-yolo"
+
+permissions:
+  contents: read
+  id-token: write # required to request the OIDC token
+
+jobs:
+  terraform-destroy:
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      TF_VAR_env: ${{ vars.ENV }}
+      TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+      TF_VAR_tf_state_bucket: ${{ vars.TF_STATE_BUCKET }}
+      TF_VAR_repo_owner_id: ${{ vars.REPO_OWNER_ID }}
+      TF_VAR_repo_id: ${{ vars.REPO_ID }}
+      TF_VAR_vpc_id: ${{ vars.VPC_ID }}
+      TF_VAR_public_subnet_id: ${{ vars.PUBLIC_SUBNET_ID }}
+      TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+
+    steps:
+      - name: Verify confirmation
+        run: |
+          set -euo pipefail
+
+          if [ "${{ inputs.confirm }}" != "${{ env.PROJECT }}" ]; then
+            echo "::error::confirm must be exactly '${{ env.PROJECT }}'"
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          # The wrapper rewrites stdout and breaks capturing plan output below.
+          terraform_wrapper: false
+
+      - name: Configure AWS credential
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_GH_TERRAFORM_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform init
+        run: |
+          set -euo pipefail
+
+          terraform -chdir=infra init \
+            -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=${{ env.PROJECT }}/${{ env.TF_VAR_env }}/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
+
+      - name: Terraform plan destroy
+        id: plan
+        run: |
+          set -euo pipefail
+
+          terraform -chdir=infra plan \
+            -destroy \
+            -input=false \
+            -out=tfdestroy \
+            -detailed-exitcode && code=$? || code=$?
+
+          # -detailed-exitcode: 0 = nothing to destroy, 2 = resources pending, 1 = error.
+          case "$code" in
+            0) echo "changes=false" >> "$GITHUB_OUTPUT" ;;
+            2) echo "changes=true"  >> "$GITHUB_OUTPUT" ;;
+            *) exit "$code" ;;
+          esac
+
+          terraform -chdir=infra show -no-color tfdestroy > destroy.txt
+
+      - name: Summarize destroy plan
+        run: |
+          {
+            echo "### Terraform destroy plan"
+            echo "Resources to destroy: \`${{ steps.plan.outputs.changes }}\`"
+            echo
+            echo '<details><summary>Show plan</summary>'
+            echo
+            echo '```terraform'
+            # Step summaries cap at 1 MiB; a large plan would be dropped whole.
+            head -c 60000 destroy.txt
+            echo '```'
+            echo '</details>'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # Applies the destroy plan produced above, so what is torn down is exactly
+      # what was shown -- no re-plan that could pick up drift in between.
+      - name: Terraform destroy
+        if: inputs.action == 'destroy'
+        run: terraform -chdir=infra apply -input=false tfdestroy
+
+      - name: Summarize result
+        if: inputs.action == 'destroy'
+        run: |
+          {
+            echo "### Destroy complete"
+            echo '```'
+            terraform -chdir=infra state list || echo "(state is empty)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

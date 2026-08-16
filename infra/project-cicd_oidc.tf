@@ -27,12 +27,13 @@ data "aws_iam_policy_document" "github_actions_oidc" {
       values   = ["sts.amazonaws.com"]
     }
 
+    # Scoped to the deploy branch
     condition {
-      test     = "StringLike"
+      test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
 
       values = [
-        "repo:${local.repo_owner}@${var.repo_owner_id}/${local.repo_name}@${var.repo_id}:*",
+        "${local.oidc_sub_prefix}:ref:refs/heads/${local.oidc_deploy_branch}",
       ]
     }
   }

@@ -15,6 +15,10 @@ locals {
   repo_name  = "sagemaker-yolo"
   repo_url   = "https://github.com/${local.repo_owner}/${local.repo_name}.git"
 
+  oidc_sub_prefix    = "repo:${local.repo_owner}@${var.repo_owner_id}/${local.repo_name}@${var.repo_id}"
+  oidc_deploy_branch = "master"
+  oidc_environment   = "dev"
+
   # ##############################
   # Experiments
   # ##############################
