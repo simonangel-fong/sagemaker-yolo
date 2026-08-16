@@ -1,0 +1,159 @@
+# Publishes web/ to S3 and invalidates CloudFront so the new objects go live.
+name: deploy webapp
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - web/**
+      - .github/workflows/web-deploy.yml
+  workflow_dispatch:
+    inputs:
+      action:
+        description: Terraform action to run
+        type: choice
+        options: [plan, apply]
+        default: plan
+
+# Shares the infra group: both mutate the same terraform state.
+concurrency:
+  group: deploy-infra
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: ca-central-1
+  TF_VERSION: "1.15.8"
+  TF_IN_AUTOMATION: "true"
+  TF_CLI_ARGS: "-no-color"
+  PROJECT: "sagemaker-yolo"
+
+permissions:
+  contents: read
+  id-token: write # required to request the OIDC token
+
+jobs:
+  deploy-webapp:
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      TF_VAR_env: ${{ vars.ENV }}
+      TF_VAR_aws_region: ${{ vars.AWS_REGION }}
+      TF_VAR_tf_state_bucket: ${{ vars.TF_STATE_BUCKET }}
+      TF_VAR_repo_owner_id: ${{ vars.REPO_OWNER_ID }}
+      TF_VAR_repo_id: ${{ vars.REPO_ID }}
+      TF_VAR_vpc_id: ${{ vars.VPC_ID }}
+      TF_VAR_public_subnet_id: ${{ vars.PUBLIC_SUBNET_ID }}
+      TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          # The wrapper rewrites stdout and breaks capturing plan output below.
+          terraform_wrapper: false
+
+      - name: Configure AWS credential
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_GH_TERRAFORM_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform init
+        run: |
+          set -euo pipefail
+
+          terraform -chdir=infra init \
+            -input=false \
+            -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" \
+            -backend-config="key=${{ env.PROJECT }}/${{ env.TF_VAR_env }}/terraform.tfstate" \
+            -backend-config="region=${{ vars.AWS_REGION }}" \
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
+
+      # web/ is uploaded by aws_s3_object.web, so only that resource is planned;
+      # unrelated infra drift stays out of a webapp deploy.
+      - name: Terraform plan
+        id: plan
+        run: |
+          set -euo pipefail
+
+          terraform -chdir=infra plan \
+            -input=false \
+            -target='aws_s3_object.web' \
+            -out=tfplan \
+            -detailed-exitcode && code=$? || code=$?
+
+          # -detailed-exitcode: 0 = no changes, 2 = changes pending, 1 = error.
+          case "$code" in
+            0) echo "changes=false" >> "$GITHUB_OUTPUT" ;;
+            2) echo "changes=true"  >> "$GITHUB_OUTPUT" ;;
+            *) exit "$code" ;;
+          esac
+
+          terraform -chdir=infra show -no-color tfplan > plan.txt
+
+      - name: Terraform apply
+        id: apply
+        if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply'
+        run: terraform -chdir=infra apply -input=false tfplan
+
+      # The distribution is not exported as an output, so it is looked up by the
+      # comment terraform sets on it: "<project>-<env> yolo web app".
+      - name: Invalidate CloudFront
+        id: invalidate
+        if: steps.apply.outcome == 'success' && steps.plan.outputs.changes == 'true'
+        run: |
+          set -euo pipefail
+
+          comment="$PROJECT-$TF_VAR_env yolo web app"
+          dist=$(aws cloudfront list-distributions \
+            --query "DistributionList.Items[?Comment=='$comment'].Id | [0]" \
+            --output text)
+
+          if [ -z "$dist" ] || [ "$dist" = "None" ]; then
+            echo "::error::No CloudFront distribution with comment '$comment'."
+            exit 1
+          fi
+
+          id=$(aws cloudfront create-invalidation \
+            --distribution-id "$dist" \
+            --paths '/*' \
+            --query 'Invalidation.Id' --output text)
+
+          echo "distribution=$dist" >> "$GITHUB_OUTPUT"
+          echo "invalidation=$id" >> "$GITHUB_OUTPUT"
+
+          # Blocks until the edges have dropped the old objects, so a green run
+          # means the new site is actually being served.
+          aws cloudfront wait invalidation-completed \
+            --distribution-id "$dist" --id "$id"
+
+      - name: Summary
+        if: always()
+        env:
+          CHANGES: ${{ steps.plan.outputs.changes }}
+          APPLIED: ${{ steps.apply.outcome }}
+          DIST: ${{ steps.invalidate.outputs.distribution }}
+          INVALIDATION: ${{ steps.invalidate.outputs.invalidation }}
+        run: |
+          {
+            echo "### Deploy webapp"
+            echo "Changes pending: \`${CHANGES:-unknown}\`"
+            echo "Applied: \`${APPLIED:-skipped}\`"
+            if [ -n "${INVALIDATION:-}" ]; then
+              echo "Invalidated: \`$DIST\` / \`$INVALIDATION\`"
+            fi
+            echo
+            echo '<details><summary>Show plan</summary>'
+            echo
+            echo '```terraform'
+            # Step summaries cap at 1 MiB; a large plan would be dropped whole.
+            head -c 60000 plan.txt 2>/dev/null || echo "(no plan)"
+            echo '```'
+            echo '</details>'
+          } >> "$GITHUB_STEP_SUMMARY"

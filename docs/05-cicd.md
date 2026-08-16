@@ -8,6 +8,7 @@
     - [Build train image workflow](#build-train-image-workflow)
     - [Deploy infrastructure workflow](#deploy-infrastructure-workflow)
     - [Destroy infrastructure workflow](#destroy-infrastructure-workflow)
+    - [Deploy webapp workflow](#deploy-webapp-workflow)
   - [GitHub Action variables and secrets](#github-action-variables-and-secrets)
 
 ---
@@ -74,6 +75,29 @@
   - Terraform plan
   - Terraform destroy
   - Summary report
+
+---
+
+### Deploy webapp workflow
+
+- name: deploy webapp
+- Trigger:
+  - web/
+  - manual
+- key steps:
+  - Setup terraform
+  - Setup aws
+  - Terraform init
+  - Terraform plan (targeted at `aws_s3_object.web`)
+  - Terraform apply
+  - Invalidate CloudFront
+  - Summary report
+
+Pushes plan only; `apply` requires a manual dispatch with `action: apply`, the
+same gate as the infrastructure workflow. The plan is targeted so a webapp
+deploy never applies unrelated infrastructure drift. The invalidation runs only
+when an apply actually changed objects, and waits for completion so a green run
+means the edges are serving the new files.
 
 ---
 
