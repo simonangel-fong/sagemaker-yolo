@@ -1,19 +1,25 @@
 // Browser client for the YOLO predictor.
 //
-// Nginx proxies /v1/ to the inference container, so requests are same-origin
-// and no CORS handling is needed on the Python side.
+// CloudFront routes /v1/* to the Lambda proxy in front of the SageMaker
+// endpoint, so requests are same-origin and CORS never applies.
 
-const MODEL = "yolo-car-plate";
+const MODEL = "sagemaker-yolo";
 const READY_URL = `/v1/models/${MODEL}`;
 const PREDICT_URL = `/v1/models/${MODEL}:predict`;
+
+// The endpoint caps a request at 6 MB of base64, which is ~4.5 MB of file.
+// Catching it here gives a clearer message than a 413 from the proxy.
+const MAX_FILE_BYTES = 4.5 * 1024 * 1024;
 
 const els = {
   status: document.getElementById("status"),
   file: document.getElementById("file"),
   conf: document.getElementById("conf"),
   confOut: document.getElementById("confOut"),
-  detect: document.getElementById("detect"),
+  detect: document.getElementById("detectBtn"),
   message: document.getElementById("message"),
+  stage: document.getElementById("stage"),
+  placeholder: document.getElementById("placeholder"),
   canvas: document.getElementById("canvas"),
   results: document.getElementById("results"),
   rows: document.getElementById("rows"),
@@ -35,14 +41,17 @@ function say(text, isError = false) {
 async function checkModel() {
   try {
     const res = await fetch(READY_URL);
-    const body = await res.json();
-    if (!res.ok) throw new Error(body.detail || res.statusText);
+    // Off CloudFront (a plain file server, say) /v1/ isn't proxied anywhere and
+    // the 404 page comes back as HTML, so res.json() would throw a parse error
+    // that means nothing to a reader. Report the status instead.
+    if (!res.ok) throw new Error(`endpoint returned ${res.status}`);
 
+    const body = await res.json();
     els.status.textContent = `ready · ${body.classes.join(", ")} · ${body.imgsz}px`;
-    els.status.className = "status ready";
+    els.status.className = "status-badge ready";
   } catch (err) {
     els.status.textContent = `unavailable — ${err.message}`;
-    els.status.className = "status down";
+    els.status.className = "status-badge down";
   }
 }
 
@@ -51,6 +60,13 @@ async function checkModel() {
 els.file.addEventListener("change", () => {
   const file = els.file.files[0];
   if (!file) return;
+
+  if (file.size > MAX_FILE_BYTES) {
+    els.detect.disabled = true;
+    say(`${file.name} is ${(file.size / 1024 / 1024).toFixed(1)} MB — resize below `
+      + `${(MAX_FILE_BYTES / 1024 / 1024).toFixed(1)} MB before sending`, true);
+    return;
+  }
 
   const reader = new FileReader();
   reader.onload = () => {
@@ -82,6 +98,8 @@ function draw(detections) {
   els.canvas.width = image.naturalWidth;
   els.canvas.height = image.naturalHeight;
   els.canvas.classList.add("loaded");
+  els.stage.classList.add("loaded");
+  els.placeholder.hidden = true;
 
   ctx.drawImage(image, 0, 0);
 
@@ -155,8 +173,12 @@ els.detect.addEventListener("click", async () => {
       }),
     });
 
-    const body = await res.json();
-    if (!res.ok) throw new Error(body.detail || res.statusText);
+    // An error from CloudFront or the proxy may not be JSON, so read the body
+    // defensively -- .detail when it parses, the status code when it doesn't.
+    const body = await res.json().catch(() => null);
+    if (!res.ok) {
+      throw new Error(body?.detail || `request failed (${res.status})`);
+    }
 
     const { detections, count } = body.predictions[0];
     const elapsed = Math.round(performance.now() - started);

@@ -5,9 +5,17 @@ locals {
     ".html" = "text/html"
     ".css"  = "text/css"
     ".js"   = "text/javascript"
+    ".png"  = "image/png"
+    ".jpg"  = "image/jpeg"
+    ".jpeg" = "image/jpeg"
+    ".gif"  = "image/gif"
+    ".svg"  = "image/svg+xml"
+    ".ico"  = "image/x-icon"
   }
 
-  s3_web_files = fileset("${path.module}/../web", "**/*.{html,css,js}")
+  # An extension must appear in both this fileset and s3_content_types above,
+  # or the object either never uploads or is served as octet-stream.
+  s3_web_files = fileset("${path.module}/../web", "**/*.{html,css,js,png,jpg,jpeg,gif,svg,ico}")
 }
 
 # upload object

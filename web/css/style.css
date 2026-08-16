@@ -1,161 +1,401 @@
-:root {
-  --bg: #10131a;
-  --panel: #171b24;
-  --line: #262c38;
-  --text: #e6e9ef;
-  --muted: #8b93a7;
-  --accent: #4ea1ff;
-  --ok: #3fb950;
-  --bad: #f85149;
-}
+/* License Plate Recognition MLOps - site styles
+   Layered on Bootstrap 5 dark theme (data-bs-theme="dark"). */
 
-* {
-  box-sizing: border-box;
+:root {
+  --brand: #4dabf7;
+  --brand-dim: #1c7ed6;
+  --surface: #14161a;
+  --surface-2: #1a1d23;
+  --hairline: rgba(255, 255, 255, 0.09);
+  --box: #f85149;
 }
 
 body {
-  margin: 0;
-  padding: 24px;
-  background: var(--bg);
-  color: var(--text);
-  font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  background-color: #0d0f12;
+  -webkit-font-smoothing: antialiased;
 }
 
-header {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  margin-bottom: 20px;
+/* Anchored sections sit below the fixed navbar when jumped to. */
+section[id] {
+  scroll-margin-top: 4.5rem;
 }
 
-h1 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 600;
+code {
+  color: #ff8fab;
 }
 
-.status {
-  font-size: 13px;
-  color: var(--muted);
+/* ---------- navbar ---------- */
+
+.navbar {
+  background-color: rgba(13, 15, 18, 0.82);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--hairline);
 }
 
-.status.ready {
-  color: var(--ok);
+.navbar-brand {
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-.status.down {
-  color: var(--bad);
-}
+/* ---------- hero ---------- */
 
-.controls {
+.hero {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
-  padding: 14px 16px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 10px;
+  min-height: 88vh;
+  padding: 7rem 0 5rem;
+  overflow: hidden;
+  /* No hero photograph ships with this project, so the backdrop is drawn:
+     two brand-tinted glows over the page ground. */
+  background:
+    radial-gradient(
+      ellipse 80% 60% at 20% 0%,
+      rgba(28, 126, 214, 0.28) 0%,
+      rgba(13, 15, 18, 0) 60%
+    ),
+    radial-gradient(
+      ellipse 70% 55% at 85% 25%,
+      rgba(77, 171, 247, 0.16) 0%,
+      rgba(13, 15, 18, 0) 65%
+    ),
+    #0d0f12;
 }
 
-/* the real input is hidden; the label is the button */
-.file input {
-  display: none;
+/* Faint grid, echoing the detection boxes the model draws. */
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, #000 0%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, #000 0%, transparent 100%);
 }
 
-.file span,
-button {
-  display: inline-block;
-  padding: 8px 16px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: #1e2430;
-  color: var(--text);
-  font: inherit;
-  font-size: 14px;
-  cursor: pointer;
+/* Settle the hero into the section below it. */
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 40%;
+  background: linear-gradient(180deg, rgba(13, 15, 18, 0) 0%, #0d0f12 100%);
+  pointer-events: none;
 }
 
-.file span:hover,
-button:hover:not(:disabled) {
-  border-color: var(--accent);
+.hero > .container {
+  position: relative;
+  z-index: 1;
 }
 
-button {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #07101f;
+.hero-title {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  font-size: clamp(2.25rem, 6vw, 4rem);
+  line-height: 1.05;
+}
+
+.hero-subtitle {
+  color: var(--brand);
   font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 1rem;
 }
 
-button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+.hero-lead {
+  font-size: clamp(1.05rem, 2.2vw, 1.2rem);
+  color: rgba(255, 255, 255, 0.78);
+  max-width: 46rem;
 }
 
-.slider {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: var(--muted);
+.hero-lead code {
+  color: #ffc9d8;
 }
 
-.slider output {
-  min-width: 2.5em;
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
+/* ---------- generic section furniture ---------- */
+
+.section {
+  padding: 5rem 0;
 }
 
-.message {
-  min-height: 1.4em;
-  margin: 12px 2px;
-  font-size: 14px;
-  color: var(--muted);
+.section-alt {
+  background-color: var(--surface);
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
 }
 
-.message.error {
-  color: var(--bad);
+.section-title {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 1.5rem;
 }
 
-.stage {
-  margin-top: 4px;
+/* The one sentence a section exists to land. */
+.statement {
+  font-size: clamp(1.25rem, 3.2vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.4;
+  color: #fff;
+  border-left: 3px solid var(--brand);
+  padding: 0.25rem 0 0.25rem 1.25rem;
+  margin: 1.75rem 0;
 }
 
-canvas {
-  max-width: 100%;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  display: none;
+.statement em {
+  font-style: normal;
+  color: var(--brand);
 }
 
-canvas.loaded {
+.callout {
+  background-color: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--brand);
+  border-radius: 0.5rem;
+  padding: 1.25rem 1.5rem;
+}
+
+.callout em {
+  font-style: normal;
+  color: var(--brand);
+}
+
+/* Screenshots are dense; a frame keeps them from bleeding into the page. */
+.figure-framed {
+  background-color: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: 0.75rem;
+  padding: 0.5rem;
+  overflow: hidden;
+}
+
+.figure-framed img {
+  width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
   display: block;
 }
 
-.results {
-  margin-top: 20px;
-  overflow-x: auto;
+.figure-caption-sm {
+  color: #9aa4b2;
+  font-size: 0.8rem;
+  margin: 0.75rem 0.25rem 0;
 }
 
-table {
-  border-collapse: collapse;
-  font-size: 14px;
+/* ---------- bullet lists ---------- */
+
+.impact-list {
+  padding-left: 1.25rem;
+  font-size: 1.125rem;
 }
 
-th,
-td {
-  padding: 8px 14px;
-  text-align: left;
-  border-bottom: 1px solid var(--line);
-  white-space: nowrap;
+.impact-list li {
+  margin-bottom: 0.75rem;
 }
 
-th {
-  color: var(--muted);
-  font-weight: 500;
+.impact-list li:last-child {
+  margin-bottom: 0;
 }
 
-td {
+.impact-list li::marker {
+  color: var(--brand);
+}
+
+/* ---------- detect widget ---------- */
+
+.detect-card {
+  background-color: var(--surface-2);
+  border: 1px solid var(--hairline);
+  border-radius: 1rem;
+}
+
+/* Readiness pill, driven by main.js. */
+.status-badge {
+  display: inline-block;
+  padding: 0.3rem 0.85rem;
+  border: 1px solid var(--hairline);
+  border-radius: 2rem;
+  background-color: var(--surface-2);
+  color: #9aa4b2;
+  font-size: 0.8rem;
+}
+
+.status-badge.ready {
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.35);
+  background-color: rgba(74, 222, 128, 0.08);
+}
+
+.status-badge.down {
+  color: #ff7b72;
+  border-color: rgba(255, 123, 114, 0.35);
+  background-color: rgba(255, 123, 114, 0.08);
+}
+
+.detect-stage {
+  min-height: 12rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  border: 1px dashed var(--hairline);
+  border-radius: 0.75rem;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+/* Once an image loads the frame stops being a placeholder well. */
+.detect-stage.loaded {
+  min-height: 0;
+  border-style: solid;
+  background-color: transparent;
+}
+
+.detect-placeholder {
+  color: #6b7480;
+  font-size: 0.9rem;
+}
+
+#canvas {
+  display: none;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+#canvas.loaded {
+  display: block;
+}
+
+/* Coordinates and scores line up column-wise when digits share a width. */
+#results td {
   font-variant-numeric: tabular-nums;
+}
+
+#message.error {
+  color: #ff7b72 !important;
+}
+
+/* ---------- lifecycle carousel ---------- */
+
+#lifecycle .carousel-item {
+  position: relative;
+}
+
+#lifecycle .carousel-item img {
+  border-radius: 0.5rem;
+}
+
+/* The screenshots run from near-black (pipeline) to near-white (notebook), so
+   no single text colour is legible over all of them. A light scrim fades in
+   over the lower third and gives the caption a consistent surface to sit on,
+   whatever the image behind it. */
+#lifecycle .carousel-item::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 55%;
+  border-radius: 0 0 0.5rem 0.5rem;
+  background: linear-gradient(
+    180deg,
+    rgba(20, 20, 20, 0) 0%,
+    rgba(20, 20, 20, 0.75) 38%,
+    rgba(20, 20, 20, 0.96) 70%,
+    rgb(20, 20, 20) 100%
+  );
+  pointer-events: none;
+}
+
+/* Caption sits above the scrim, in dark ink to match it. */
+#lifecycle .carousel-caption {
+  z-index: 2;
+  right: 8%;
+  left: 8%;
+  bottom: 1.25rem;
+  padding: 0;
+  text-align: center;
+  text-shadow: none;
+}
+
+#lifecycle .carousel-caption h5 {
+  color: #16181b;
+  font-weight: 700;
+  margin-bottom: 0;
+}
+
+#lifecycle .carousel-caption code {
+  color: #a5305c;
+  background-color: rgba(0, 0, 0, 0.06);
+  padding: 0.1em 0.35em;
+  border-radius: 0.25rem;
+}
+
+/* The arrows span the full frame height, crossing both the dark image and the
+   light scrim, so neither a white nor a dark icon works alone. A translucent
+   dark puck travels with the icon and keeps it readable over either. */
+#lifecycle .carousel-control-prev-icon,
+#lifecycle .carousel-control-next-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  background-color: rgba(22, 24, 27, 0.55);
+  background-size: 1.1rem 1.1rem;
+  border-radius: 50%;
+}
+
+#lifecycle .carousel-control-prev:hover .carousel-control-prev-icon,
+#lifecycle .carousel-control-next:hover .carousel-control-next-icon {
+  background-color: rgba(22, 24, 27, 0.8);
+}
+
+/* Below md Bootstrap hides the caption entirely (d-none d-md-block). The
+   screenshots are unreadable at that width anyway, so the caption carries the
+   slide - drop the overlay and let it sit under the image instead. */
+@media (max-width: 767.98px) {
+  #lifecycle .carousel-item::after {
+    display: none;
+  }
+
+  #lifecycle .carousel-caption {
+    position: static;
+    display: block !important;
+    padding: 0.875rem 0.25rem 2.5rem;
+  }
+
+  #lifecycle .carousel-caption h5 {
+    color: #f1f3f5;
+    font-size: 1rem;
+  }
+
+  #lifecycle .carousel-caption code {
+    color: #ff8fab;
+    background-color: rgba(255, 255, 255, 0.08);
+  }
+}
+
+/* ---------- footer ---------- */
+
+.site-footer {
+  background-color: var(--surface);
+  border-top: 1px solid var(--hairline);
+  padding: 2.5rem 0;
+  color: #9aa4b2;
+  font-size: 0.875rem;
+}
+
+.site-footer a {
+  color: #9aa4b2;
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  color: var(--brand);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

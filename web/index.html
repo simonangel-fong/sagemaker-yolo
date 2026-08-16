@@ -1,54 +1,384 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" data-bs-theme="dark">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>YOLO car-plate detector</title>
+  <title>License Plate Recognition MLOps</title>
+  <meta name="description"
+    content="An end-to-end MLOps workflow: training, deploying, and serving a YOLO license-plate detection model on AWS SageMaker.">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
   <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-  <header>
-    <h1>Car plate detector</h1>
-    <span id="status" class="status">checking model…</span>
+
+  <!-- ===== navbar ===== -->
+  <nav class="navbar navbar-expand-lg fixed-top">
+    <div class="container">
+      <a class="navbar-brand" href="#">Car Plate Detection</a>
+
+      <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#nav"
+        aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse justify-content-end" id="nav">
+        <ul class="navbar-nav gap-lg-2">
+          <li class="nav-item"><a class="nav-link" href="#challenge">Challenge</a></li>
+          <li class="nav-item"><a class="nav-link" href="#detect">Detect</a></li>
+          <li class="nav-item"><a class="nav-link" href="#ml">Machine Learning</a></li>
+          <li class="nav-item"><a class="nav-link" href="#compare">CPU vs GPU</a></li>
+          <li class="nav-item"><a class="nav-link" href="#inference">Inference</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ===== hero ===== -->
+  <header class="hero">
+    <div class="container">
+      <div class="row justify-content-center text-center">
+        <div class="col-12 col-sm-10">
+          <h3 class="hero-title mb-4">License Plate Recognition MLOps</h3>
+          <p class="hero-subtitle mb-3">End-to-end MLOps workflow</p>
+          <p class="hero-lead mx-auto mb-5">
+            An <code>Amazon SageMaker</code> project that trains and deploys a <code>YOLO</code>
+            object-detection model through a full MLOps workflow — from labelled images to a
+            serverless inference endpoint behind a public web app.
+          </p>
+          <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+            <a href="#detect" class="btn btn-light btn-lg px-4">Try the model</a>
+            <a href="https://github.com/simonangel-fong/sagemaker-yolo" target="_blank" rel="noopener"
+              class="btn btn-outline-light btn-lg px-4">GitHub Repository</a>
+          </div>
+        </div>
+      </div>
+    </div>
   </header>
 
-  <section class="controls">
-    <label class="file">
-      <input type="file" id="file" accept="image/jpeg,image/png">
-      <span>Choose image</span>
-    </label>
+  <!-- ===== challenge ===== -->
+  <section id="challenge" class="section">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-9">
+          <h1 class="section-title">Business Challenge</h1>
 
-    <label class="slider">
-      confidence <output id="confOut">0.25</output>
-      <input type="range" id="conf" min="0.05" max="0.95" step="0.05" value="0.25">
-    </label>
+          <p class="lead text-secondary fs-4">
+            Computer vision models like <code>YOLO</code> are popular for object detection
+            in manufacturing.
+          </p>
 
-    <button id="detect" disabled>Detect</button>
+          <p class="statement">
+            <em>Integrating these computer vision models reliably into business
+              applications</em> remains a significant challenge.
+          </p>
+
+          <p class="text-secondary fs-4 mb-4">
+            This project demonstrates an end-to-end MLOps workflow by training, deploying,
+            and serving a <code>YOLO</code> model that detects vehicle license plates.
+          </p>
+
+          <div class="callout">
+            <p class="mb-0 text-secondary">
+              OCR is out of scope — the model detects plate <em>regions</em>, it does not
+              read them.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 
-  <p id="message" class="message"></p>
+  <!-- ===== ml-app: live detection ===== -->
+  <section id="detect" class="section section-alt">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-9 text-center mb-4">
+          <h1 class="section-title">License Plate Recognition</h1>
+          <p class="text-secondary fs-4">
+            The deployed model, served from a <code>SageMaker</code> serverless endpoint
+            through a <code>Lambda</code> proxy. Pick an image and run detection.
+          </p>
+          <span id="status" class="status-badge">checking model…</span>
+        </div>
+      </div>
 
-  <section class="stage">
-    <!-- image is drawn into the canvas, boxes on top of it -->
-    <canvas id="canvas"></canvas>
+      <div class="row justify-content-center">
+        <div class="col-lg-9">
+          <div class="detect-card p-4 p-md-5">
+
+            <div class="row g-3 align-items-end mb-4">
+              <div class="col-sm-6">
+                <label for="file" class="form-label small text-secondary">Image</label>
+                <input type="file" id="file" class="form-control" accept="image/jpeg,image/png">
+              </div>
+              <div class="col-sm-6">
+                <label for="conf" class="form-label small text-secondary">
+                  Confidence threshold — <output id="confOut" class="text-body">0.25</output>
+                </label>
+                <input type="range" id="conf" class="form-range" min="0.05" max="0.95" step="0.05" value="0.25">
+              </div>
+            </div>
+
+            <button id="detectBtn" class="btn btn-primary btn-lg w-100" disabled>Detect</button>
+
+            <div id="stage" class="detect-stage mt-4">
+              <p id="placeholder" class="detect-placeholder mb-0">
+                Your detection will appear here.
+              </p>
+              <canvas id="canvas"></canvas>
+            </div>
+
+            <div id="results" class="table-responsive mt-4" hidden>
+              <table class="table table-sm table-borderless align-middle mb-0">
+                <thead>
+                  <tr class="text-secondary small text-uppercase">
+                    <th scope="col">#</th>
+                    <th scope="col">Class</th>
+                    <th scope="col">Confidence</th>
+                    <th scope="col">Box (x1, y1, x2, y2)</th>
+                  </tr>
+                </thead>
+                <tbody id="rows"></tbody>
+              </table>
+            </div>
+
+            <hr class="border-secondary opacity-25">
+            <p id="message" class="small text-secondary text-center mb-0"></p>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 
-  <section id="results" class="results" hidden>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>class</th>
-          <th>confidence</th>
-          <th>box (x1, y1, x2, y2)</th>
-        </tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
+  <!-- ===== machine learning ===== -->
+  <section id="ml" class="section">
+    <div class="container">
+
+      <div class="row justify-content-center">
+        <div class="col-lg-9">
+          <h1 class="section-title">Machine Learning</h1>
+
+          <p class="text-secondary fs-5 mb-4">
+            The <code>YOLO</code> model is trained with <code>Amazon SageMaker Studio</code>,
+            following a repeatable MLOps lifecycle:
+          </p>
+
+          <ul class="impact-list text-secondary mb-5">
+            <li><strong class="text-primary">Data collection</strong> — collect images of license plates.</li>
+            <li><strong class="text-primary">Feature engineering</strong> — label images.</li>
+            <li>
+              <strong class="text-primary">Model training and experiment tracking</strong> —
+              run training code with a <code>SageMaker pipeline</code> and log metrics to
+              <code>MLflow</code>.
+            </li>
+            <li>
+              <strong class="text-primary">Evaluate model</strong> — register the model only
+              when <code>mAP50-95</code> clears the <code>0.70</code> gate.
+            </li>
+            <li>
+              <strong class="text-primary">Package and deploy</strong> — serve the model from
+              a <code>SageMaker</code> serverless endpoint.
+            </li>
+            <li>
+              <strong class="text-primary">Integrate</strong> the inference endpoint with the
+              web application.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- lifecycle carousel -->
+      <div class="row justify-content-center">
+        <div class="col-lg-9">
+          <h3 class="h4 mb-3">MLOps Lifecycle</h3>
+
+          <div id="lifecycle" class="carousel slide" data-bs-ride="false">
+            <div class="carousel-inner">
+
+              <div class="carousel-item active">
+                <img src="img/sagemaker_pipeline02.png" class="d-block w-100" alt="SageMaker pipeline graph">
+                <div class="carousel-caption d-none d-md-block">
+                  <h5>Training automated by a <code>SageMaker Pipeline</code></h5>
+                </div>
+              </div>
+
+              <div class="carousel-item">
+                <img src="img/notebook_train_cpu01.png" class="d-block w-100" loading="lazy"
+                  alt="Jupyter notebook running YOLO training">
+                <div class="carousel-caption d-none d-md-block">
+                  <h5>Model development using <code>Jupyter Notebook</code></h5>
+                </div>
+              </div>
+
+              <div class="carousel-item">
+                <img src="img/mlflow_metrics01.png" class="d-block w-100" loading="lazy" alt="MLflow metrics charts">
+                <div class="carousel-caption d-none d-md-block">
+                  <h5>Training metrics tracked with <code>MLflow</code></h5>
+                </div>
+              </div>
+
+              <div class="carousel-item">
+                <img src="img/mlflow_traintime01.png" class="d-block w-100" loading="lazy"
+                  alt="MLflow hyperparameter sweep comparison">
+                <div class="carousel-caption d-none d-md-block">
+                  <h5>Hyperparameter sweep for the best performance</h5>
+                </div>
+              </div>
+            </div>
+
+            <button class="carousel-control-prev" type="button" data-bs-target="#lifecycle" data-bs-slide="prev">
+              <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#lifecycle" data-bs-slide="next">
+              <span class="carousel-control-next-icon" aria-hidden="true"></span>
+              <span class="visually-hidden">Next</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
   </section>
 
+  <!-- ===== cpu vs gpu ===== -->
+  <section id="compare" class="section section-alt">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-9">
+          <h1 class="section-title">CPU vs GPU</h1>
+
+          <p class="text-secondary fs-5 mb-4">
+            The same <code>YOLO</code> model, trained on the same dataset with the same
+            hyperparameters, on two instance types.
+          </p>
+
+          <div class="table-responsive mb-3">
+            <table class="table table-borderless align-middle mb-0">
+              <thead>
+                <tr class="text-secondary small text-uppercase">
+                  <th scope="col">Instance</th>
+                  <th scope="col">Specification</th>
+                  <th scope="col">GPU</th>
+                  <th scope="col">Rate per hour ($)</th>
+                  <th scope="col">Total min</th>
+                  <th scope="col">Total cost ($)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>ml.m5.xlarge(cpu)</code></td>
+                  <td>4vCPU, 16 GiB</td>
+                  <td>N/A</td>
+                  <td>0.257</td>
+                  <td>27.8</td>
+                  <td>0.379</td>
+                </tr>
+                <tr>
+                  <td><code>ml.g4dn.xlarge(gpu)</code></td>
+                  <td>4vCPU, 16 GiB</td>
+                  <td>Yes</td>
+                  <td>0.818</td>
+                  <td>2.2</td>
+                  <td>0.029</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="statement">
+            The GPU instance costs ~3x more per hour but finishes ~13x faster, so the run
+            is roughly <em>13x cheaper</em> overall.
+          </p>
+
+          <div class="row g-4 mt-1">
+            <div class="col-lg-6">
+              <figure class="figure-framed mb-0">
+                <img src="img/cpu_vs_gpu01.png" loading="lazy"
+                  alt="Training time comparison: 27.8 minutes on CPU versus 2.2 minutes on GPU">
+              </figure>
+              <p class="figure-caption-sm">Train time — cpu <code>27.8m</code> vs gpu <code>2.2m</code></p>
+            </div>
+            <div class="col-lg-6">
+              <figure class="figure-framed mb-0">
+                <img src="img/cpu_vs_gpu02.png" loading="lazy"
+                  alt="Resource utilisation comparison between the CPU and GPU training runs">
+              </figure>
+              <p class="figure-caption-sm">
+                Resource use — cpu run (blue) ~75% cpu; gpu run (red) ~75% cpu, ~15% gpu
+              </p>
+            </div>
+          </div>
+
+          <div class="callout mt-4">
+            <p class="mb-0 text-secondary">
+              Low GPU utilisation indicates the run is <em>input-bound</em> rather than
+              compute-bound — headroom for a larger batch or faster data loading.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== inference ===== -->
+  <section id="inference" class="section">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-lg-9">
+          <h1 class="section-title">Inference Deployment</h1>
+
+          <ul class="impact-list text-secondary mb-4">
+            <li>
+              <strong class="text-primary">Promote the model</strong> — approve a version in
+              the <code>sagemaker-yolo</code> model package group.
+            </li>
+            <li>
+              <strong class="text-primary">Serve</strong> the approved model from a
+              <code>SageMaker</code> serverless endpoint, so idle time costs nothing.
+            </li>
+            <li>
+              <strong class="text-primary">Integrate</strong> the endpoint with the web
+              application through the <code>Lambda</code> proxy behind <code>CloudFront</code>.
+            </li>
+          </ul>
+
+          <figure class="figure-framed mb-0">
+            <img src="img/architecture.gif" loading="lazy"
+              alt="Animated diagram of the AWS architecture: Cloudflare DNS to CloudFront, static frontend from S3, and a Lambda proxy invoking the SageMaker serverless endpoint">
+          </figure>
+          <p class="figure-caption-sm">Request flow through the deployed infrastructure</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== footer ===== -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="row gy-3 align-items-center">
+        <div class="col-md-6">
+          <strong class="d-block text-body">Arguswatcher</strong>@2026
+        </div>
+        <div class="col-md-6 text-md-end">
+          <a href="https://trip-ml.arguswatcher.net/" target="_blank" rel="noopener" class="me-3">Shared Bike ML
+            project</a>
+          <a href="https://github.com/simonangel-fong/sagemaker-yolo" target="_blank" rel="noopener">GitHub</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+    integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.min.js"
+    integrity="sha384-G/EV+4j2dNv+tEPo3++6LCgdCROaejBqfUeNjuKAiuXbjrxilcCdDz6ZAVfHWe1Y"
+    crossorigin="anonymous"></script>
   <script src="js/main.js"></script>
 </body>
 

@@ -66,8 +66,6 @@ Train the `YOLO` model with `Amazon SageMaker Studio`.
 
 ![sagemaker_pipeline02](./docs/img/sagemaker_pipeline02.png)
 
-The sweep notebook exports the winning hyperparameters to `train/hyperparams.json`, which is committed to git and read by the pipeline. That file is the contract between experimentation and automated training — nothing in the pipeline talks to `MLflow`, so the tracking server can stay shut down between experiments.
-
 ---
 
 ### `Jupyter notebook` & `MLflow`
