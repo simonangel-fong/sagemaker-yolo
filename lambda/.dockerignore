@@ -1,0 +1,10 @@
+# Docker only reads .dockerignore from the build context root (lambda/).
+# Keeping these rules here keeps stale caches and test-only files out of the
+# image; a copy nested under app/ would be silently ignored.
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# Test-only module; not part of the deployed handler.
+app/test_local.py

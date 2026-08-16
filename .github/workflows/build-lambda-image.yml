@@ -1,4 +1,4 @@
-# Builds the Lambda image.
+# Builds the Lambda inference image.
 name: build lambda image
 
 on:
@@ -8,6 +8,11 @@ on:
       - lambda/**
       - .github/workflows/build-lambda-image.yml
   workflow_dispatch:
+    inputs:
+      push:
+        description: Push the image to ECR (uncheck for a build-only dry run)
+        type: boolean
+        default: true
 
 concurrency:
   group: build-lambda-image-${{ github.ref }}
@@ -25,34 +30,93 @@ permissions:
 jobs:
   build-lambda-image:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Configure AWS credential
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@e6de054238d6b7531b4efff3b6587d9aade6a06c # v6.2.3
         with:
           role-to-assume: ${{ secrets.AWS_GH_OIDC_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login AWS
+      - name: Login to Amazon ECR
         id: ecr
         uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64 # v2.1.6
 
-      - name: Setup buildx
+      - name: Resolve image reference
+        id: meta
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+        run: |
+          repo="$REGISTRY/$PROJECT-lambda"
+          {
+            echo "repository=$repo"
+            echo "image=$repo:${GITHUB_SHA}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Setup Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
+      # Lambda rejects Buildx's default manifest. Three separate causes, all of
+      # which must be addressed together, or CreateFunction fails with
+      # "image manifest ... not supported":
+      #   - an OCI image index   -> a single `platforms` entry
+      #   - provenance/SBOM attestations (an `unknown/unknown` manifest)
+      #                          -> provenance: false, sbom: false
+      #   - OCI media types      -> oci-mediatypes=false in `outputs`
       - name: Build and push
+        id: build
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: lambda
-          push: true
+          file: lambda/Dockerfile
           platforms: linux/amd64
           provenance: false
           sbom: false
+          outputs: |
+            type=image,oci-mediatypes=false,push=${{ github.event_name != 'workflow_dispatch' || inputs.push }}
           tags: |
-            ${{ steps.ecr.outputs.registry }}/${{ env.PROJECT }}-lambda:${{ github.sha }}
-            ${{ steps.ecr.outputs.registry }}/${{ env.PROJECT }}-lambda:latest
+            ${{ steps.meta.outputs.repository }}:${{ github.sha }}
+            ${{ steps.meta.outputs.repository }}:latest
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha,scope=lambda
           cache-to: type=gha,scope=lambda,mode=max
 
+      # Catches a bad manifest at ECR, where the cause is legible, rather than
+      # at `terraform apply` where Lambda reports it as an opaque error.
+      - name: Verify manifest is Lambda-compatible
+        if: ${{ github.event_name != 'workflow_dispatch' || inputs.push }}
+        env:
+          EXPECTED: application/vnd.docker.distribution.manifest.v2+json
+        run: |
+          manifest=$(aws ecr batch-get-image \
+            --repository-name "$PROJECT-lambda" \
+            --image-ids imageTag="$GITHUB_SHA" \
+            --query 'images[0].imageManifest' --output text)
+          media_type=$(echo "$manifest" | jq -r '.mediaType')
+          echo "mediaType: $media_type"
+          if [ "$media_type" != "$EXPECTED" ]; then
+            echo "::error::Unsupported manifest media type '$media_type'; Lambda requires '$EXPECTED'."
+            exit 1
+          fi
+
+      - name: Summary
+        env:
+          IMAGE: ${{ steps.meta.outputs.image }}
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          {
+            echo "### Lambda image"
+            echo '```'
+            echo "$IMAGE"
+            echo "$DIGEST"
+            echo '```'
+            echo "Terraform deploys the \`latest\` tag (var.lambda_image_tag)."
+          } >> "$GITHUB_STEP_SUMMARY"
