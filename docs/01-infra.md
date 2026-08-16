@@ -1,8 +1,8 @@
-# Sagemaker yolo
+# Sagemaker yolo - Terraform
 
 [Back](../README.md)
 
-- [Sagemaker yolo](#sagemaker-yolo)
+- [Sagemaker yolo - Terraform](#sagemaker-yolo---terraform)
   - [Infra as code](#infra-as-code)
 
 ---
@@ -26,3 +26,5 @@ terraform -chdir=infra destroy -auto-approve
 terraform -chdir=infra refresh
 terraform -chdir=infra output
 ```
+
+![architecture](./img/architecture.gif)

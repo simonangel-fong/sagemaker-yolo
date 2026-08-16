@@ -1,17 +1,18 @@
 # License plate recognition with `Amazon SageMaker`
 
-An `Amazon SageMaker` project that trains and deploys a object detection model(`YOLO`) with `MLOps` workflow.
+An `Amazon SageMaker` project that trains and deploys an object detection model (`YOLO`) through a full `MLOps` workflow — from labelled images to a serverless inference endpoint behind a public web app.
 
 ![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=for-the-badge&logo=terraform&logoColor=white&style=plastic) ![AWS](https://img.shields.io/badge/AWS-FF9900?style=for-the-badge&logo=amazonwebservices&logoColor=white&style=plastic) ![Cloudflare](https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge&logo=Cloudflare&logoColor=white&style=plastic) ![GitHub](https://img.shields.io/badge/github-%23121011.svg?style=for-the-badge&logo=github&logoColor=white&style=plastic) ![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white&style=plastic) ![YOLO](https://img.shields.io/badge/YOLO-111F68?logo=yolo&logoColor=fff&style=plastic) ![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff&style=plastic)
 
 - [License plate recognition with `Amazon SageMaker`](#license-plate-recognition-with-amazon-sagemaker)
   - [Business Challenge](#business-challenge)
-  - [License plate recognition application](#license-plate-recognition-application)
-  - [Model training with `Amazon Sagemaker Studio`](#model-training-with-amazon-sagemaker-studio)
-    - [MLops Pipeline](#mlops-pipeline)
+  - [Architecture](#architecture)
+  - [Model training with `Amazon SageMaker Studio`](#model-training-with-amazon-sagemaker-studio)
+    - [MLOps Pipeline](#mlops-pipeline)
     - [`Jupyter notebook` \& `MLflow`](#jupyter-notebook--mlflow)
     - [Comparison: `cpu` vs `gpu`](#comparison-cpu-vs-gpu)
   - [Inference deployment](#inference-deployment)
+  - [Documentation](#documentation)
 
 ---
 
@@ -19,48 +20,59 @@ An `Amazon SageMaker` project that trains and deploys a object detection model(`
 
 Computer vision models like `YOLO` are popular for object detection in manufacturing.
 
-> However, integrating this computer vision models reliably into business applications remains a significant challenge.
+> However, integrating these computer vision models reliably into business applications remains a significant challenge.
 
-This project demonstrates an end-to-end MLOps workflow by training, deploying, and serving a a `YOLO` model to detect vehicle plate.
-
----
-
-## License plate recognition application
-
-- Architecture diagram
-
-![architecture](./docs/img/architecture.png)
-
-- Application
-
-![yolo_plate_detect01](./docs/img/yolo_plate_detect01.png)
-
-> OCR feature is not included
+This project demonstrates an end-to-end MLOps workflow by training, deploying, and serving a `YOLO` model that detects vehicle license plates.
 
 ---
 
-## Model training with `Amazon Sagemaker Studio`
+## Architecture
 
-Train the `YOLO` model with `Amazon Sagemaker Studio`
+![architecture](./docs/img/architecture.gif)
 
-### MLops Pipeline
+- Repo layout
 
-1. Data Collection: collect images of license plate
-2. Feature Engineering: label images
-3. Model Training and Experiment Tracking: Run training code with `Sagemaker pipeline` and log metrics by `MLflow`
-4. Evaluate model
-5. Package and deploy model: Serve model with `Sagemaker serverless endpoint` and integrate it with web application.
-6. Integrate **inference endpoint** with **web application**.
+```
+sagemaker-yolo/
+├── .github/    GitHub Actions CI/CD workflows.
+├── infra/      Terraform for every AWS resource.
+├── notebook/   Jupyter notebooks.
+├── train/      Pipeline definition, step scripts, training image, `hyperparams.json`.
+├── inference/  Model server entry point used by the SageMaker endpoint.
+├── lambda/     Lambda codes and docker file.
+├── web/        Static frontend served from `S3` via `CloudFront`.
+├── docs/       Step-by-step runbooks.
+└── README.md   Readme documentation.
+```
 
-- Sagemaker pipeline to automate training
+> OCR feature is not included — the model detects plate regions, it does not read them.
+
+---
+
+## Model training with `Amazon SageMaker Studio`
+
+Train the `YOLO` model with `Amazon SageMaker Studio`.
+
+### MLOps Pipeline
+
+1. **Data collection** — collect images of license plates.
+2. **Feature engineering** — label images.
+3. **Model training and experiment tracking** — run training code with a `SageMaker pipeline` and log metrics to `MLflow`.
+4. **Evaluate model** — register the model only when `mAP50-95` clears the `0.70` gate.
+5. **Package and deploy** — serve the model from a `SageMaker` serverless endpoint.
+6. **Integrate** the **inference endpoint** with the **web application**.
+
+- SageMaker pipeline to automate training
 
 ![sagemaker_pipeline02](./docs/img/sagemaker_pipeline02.png)
+
+The sweep notebook exports the winning hyperparameters to `train/hyperparams.json`, which is committed to git and read by the pipeline. That file is the contract between experimentation and automated training — nothing in the pipeline talks to `MLflow`, so the tracking server can stay shut down between experiments.
 
 ---
 
 ### `Jupyter notebook` & `MLflow`
 
-- `Jupyter notebook`: train `YOLO` model
+- `Jupyter notebook`: train the `YOLO` model
 
 ![notebook_train_cpu01](./docs/img/notebook_train_cpu01.png)
 
@@ -76,14 +88,16 @@ Train the `YOLO` model with `Amazon Sagemaker Studio`
 
 ### Comparison: `cpu` vs `gpu`
 
-Train the same YOLO model with same dataset and same hyperparameters.
+Train the same YOLO model with the same dataset and the same hyperparameters.
 
-- Cost comparision
+- Cost comparison
 
 | Instance              | Specification | GPU | Rate per hour($) | Total min | Total cost($) |
 | --------------------- | ------------- | --- | ---------------- | --------- | ------------- |
 | `ml.m5.xlarge(cpu)`   | 4vCPU, 16 GiB | N/A | 0.257            | 27.8      | 0.379         |
 | `ml.g4dn.xlarge(gpu)` | 4vCPU, 16 GiB | Yes | 0.818            | 2.2       | 0.029         |
+
+The GPU instance costs ~3x more per hour but finishes ~13x faster, so the run is roughly **13x cheaper** overall.
 
 - train time
   - train with cpu: 27.8m
@@ -91,16 +105,28 @@ Train the same YOLO model with same dataset and same hyperparameters.
 
 ![cpu_vs_gpu01](./docs/img/cpu_vs_gpu01.png)
 
-- resources consumption
+- resource consumption
   - train with cpu (blue): ~75% cpu
   - train with gpu (red): ~75% cpu, gpu: ~15%
 
 ![cpu_vs_gpu02](./docs/img/cpu_vs_gpu02.png)
 
+Low GPU utilisation indicates the run is input-bound rather than compute-bound — headroom for a larger batch or faster data loading.
+
 ---
 
 ## Inference deployment
 
-1. Promote models
-2. serve promoted model with Sagemaker serverless endpoint.
-3. integrate endpoint with web application
+1. **Promote the model** — approve a version in the `sagemaker-yolo` model package group.
+2. **Serve** the approved model from a `SageMaker` serverless endpoint, so idle time costs nothing.
+3. **Integrate** the endpoint with the web application through the `Lambda` proxy behind `CloudFront`.
+
+---
+
+## Documentation
+
+- [Infrastructure-as-code via Terraform](./docs/01-infra.md)
+- [Train `YOLO` model with `Amazon Sagemaker Studio`](./docs/02-train.md)
+- [MLOps pipeline](./docs/03-pipeline.md)
+- [ML application deployment](./docs/04-deploy.md)
+- [CI/CD pipeline](./docs/05-cicd.md)
