@@ -77,18 +77,19 @@ cicd
 | --------- | ----------- |
 | ENV       | dev         |
 
-| Variables            | Description              |
-| -------------------- | ------------------------ |
-| AWS_GH_OIDC_ROLE_ARN | AWS GitHub OIDC role arn |
-| REPO_OWNER_ID        | GitHub owner id          |
-| REPO_ID              | GitHub repo id           |
-| AWS_REGION           | AWS region               |
-| TF_STATE_BUCKET      | Terraform state bucket   |
-| VPC_ID               | VPC id                   |
-| PUBLIC_SUBNET_ID     | Public subnet id         |
-| ENABLE_DEPLOY        | false                    |
-| ECR_TRAIN_URL        | ECR url for train image  |
-| ECR_LAMBDA_URL       | ECR url for lambda image |
+| Variables                 | Description                        |
+| ------------------------- | ---------------------------------- |
+| AWS_GH_OIDC_ROLE_ARN      | AWS GitHub OIDC role arn           |
+| AWS_GH_TERRAFORM_ROLE_ARN | AWS GitHub OIDC terraform role arn |
+| REPO_OWNER_ID             | GitHub owner id                    |
+| REPO_ID                   | GitHub repo id                     |
+| AWS_REGION                | AWS region                         |
+| TF_STATE_BUCKET           | Terraform state bucket             |
+| VPC_ID                    | VPC id                             |
+| PUBLIC_SUBNET_ID          | Public subnet id                   |
+| ENABLE_DEPLOY             | false                              |
+| ECR_TRAIN_URL             | ECR url for train image            |
+| ECR_LAMBDA_URL            | ECR url for lambda image           |
 
 | Secrets              | Description          |
 | -------------------- | -------------------- |
@@ -102,7 +103,7 @@ gh secret set AWS_GH_OIDC_ROLE_ARN --body "arn:aws:iam::099139718958:role/sagema
 
 # gh terraform role
 terraform -chdir=infra output -raw github_terraform_role_arn
-gh secret set AWS_GH_OIDC_ROLE_ARN --body "arn:aws:iam::099139718958:role/sagemaker-yolo-dev-github-terraform-role"
+gh secret set AWS_GH_TERRAFORM_ROLE_ARN --body "arn:aws:iam::099139718958:role/sagemaker-yolo-dev-github-terraform-role"
 
 # ecr train repo
 terraform -chdir=infra output -raw ecr_train_repo

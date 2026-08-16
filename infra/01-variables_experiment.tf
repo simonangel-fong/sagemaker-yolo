@@ -22,13 +22,13 @@ variable "vpc_id" {
   }
 }
 
-# Studio apps pull pip packages, so these need an IGW or NAT route.
-variable "public_subnet_ids" {
-  description = "Subnets for the Studio domain. Must have a route to an IGW or NAT."
-  type        = list(string)
+# Studio apps pull pip packages, so this needs an IGW or NAT route.
+variable "public_subnet_id" {
+  description = "Subnet for the Studio domain. Must have a route to an IGW or NAT."
+  type        = string
 
   validation {
-    condition     = length(var.public_subnet_ids) > 0
-    error_message = "public_subnet_ids must not be empty."
+    condition     = can(regex("^subnet-[0-9a-f]{8,17}$", var.public_subnet_id))
+    error_message = "public_subnet_id must look like subnet-xxxxxxxx."
   }
 }

@@ -47,7 +47,7 @@ jobs:
       TF_VAR_repo_owner_id: ${{ vars.REPO_OWNER_ID }}
       TF_VAR_repo_id: ${{ vars.REPO_ID }}
       TF_VAR_vpc_id: ${{ vars.VPC_ID }}
-      TF_VAR_public_subnet_ids: ${{ vars.PUBLIC_SUBNET_ID }}
+      TF_VAR_public_subnet_id: ${{ vars.PUBLIC_SUBNET_ID }}
       TF_VAR_enable_deploy: ${{ vars.ENABLE_DEPLOY }}
       TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}

@@ -25,7 +25,7 @@ resource "aws_sagemaker_domain" "yolo" {
 
   # Network
   vpc_id                  = var.vpc_id
-  subnet_ids              = var.public_subnet_ids
+  subnet_ids              = [var.public_subnet_id]
   app_network_access_type = "PublicInternetOnly"
 
   # security
