@@ -1,6 +1,5 @@
 # Dockerfile
-# Build context is this directory:
-#     docker build -t yolo-predict deploy/lambda
+#   docker build -t yolo-predict deploy/lambda
 
 FROM public.ecr.aws/lambda/python:3.12
 
