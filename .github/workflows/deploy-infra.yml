@@ -25,7 +25,7 @@ concurrency:
 
 env:
   AWS_REGION: ca-central-1
-  TF_VERSION: "1.15.7"
+  TF_VERSION: "1.15.8"
   TF_IN_AUTOMATION: "true"
   TF_CLI_ARGS: "-no-color"
 
@@ -38,21 +38,16 @@ jobs:
   terraform:
     runs-on: ubuntu-latest
     environment: dev
-
-    # Terraform reads TF_VAR_<name> for each input variable, which keeps
-    # secrets off the command line and out of the plan output.
     env:
       TF_VAR_env: ${{ vars.ENV }}
       TF_VAR_aws_region: ${{ vars.AWS_REGION }}
-      TF_VAR_repo_owner_id: ${{ vars.GIT_OWNER_ID }}
-      TF_VAR_repo_namesitory: ${{ vars.REPO_FULL_NAME }}
       TF_VAR_repo_owner_id: ${{ vars.REPO_OWNER_ID }}
-      TF_VAR_repo_namesitory_id: ${{ vars.REPO_ID }}
+      TF_VAR_repo_id: ${{ vars.REPO_ID }}
       TF_VAR_vpc_id: ${{ vars.VPC_ID }}
-      TF_VAR_public_subnet_ids: ${{ vars.PUBLIC_SUBNET_IDS }}
+      TF_VAR_public_subnet_ids: ${{ vars.PUBLIC_SUBNET_ID }}
       TF_VAR_enable_deploy: ${{ vars.ENABLE_DEPLOY }}
-      TF_VAR_cloudflare_zone_id: ${{ vars.CLOUDFLARE_ZONE_ID }}
       TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
 
     steps:
       - name: Checkout
@@ -68,7 +63,7 @@ jobs:
       - name: Configure AWS credential
         uses: aws-actions/configure-aws-credentials@v6
         with:
-          role-to-assume: ${{ secrets.AWS_TERRAFORM_ROLE_ARN }}
+          role-to-assume: ${{ secrets.AWS_GH_OIDC_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Terraform init

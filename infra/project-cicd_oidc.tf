@@ -11,7 +11,7 @@ data "aws_iam_openid_connect_provider" "github" {
 # ##############################
 # IAM: role assumed by GitHub Actions
 # ##############################
-data "aws_iam_policy_document" "github_actions_assume" {
+data "aws_iam_policy_document" "github_actions_oidc" {
   statement {
     effect  = "Allow"
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -38,9 +38,9 @@ data "aws_iam_policy_document" "github_actions_assume" {
   }
 }
 
-resource "aws_iam_role" "github_actions" {
-  name               = "${local.prefix_name}-github-actions-role"
-  assume_role_policy = data.aws_iam_policy_document.github_actions_assume.json
+resource "aws_iam_role" "github_actions_oidc" {
+  name               = "${local.prefix_name}-github-actions-oidc-role"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_oidc.json
 
   tags = local.default_tags
 }
@@ -128,6 +128,6 @@ data "aws_iam_policy_document" "github_actions_ecr" {
 
 resource "aws_iam_role_policy" "github_actions_ecr" {
   name   = "${local.prefix_name}-github-actions-ecr"
-  role   = aws_iam_role.github_actions.id
+  role   = aws_iam_role.github_actions_oidc.id
   policy = data.aws_iam_policy_document.github_actions_ecr.json
 }

@@ -37,6 +37,6 @@ output "ecr_lambda_repo" {
 # CI/CD
 # ##############################
 # Store this as the AWS_ROLE_ARN secret (or variable) in the GitHub repository.
-output "github_actions_role_arn" {
-  value = aws_iam_role.github_actions.arn
+output "github_actions_oidc_role_arn" {
+  value = aws_iam_role.github_actions_oidc.arn
 }

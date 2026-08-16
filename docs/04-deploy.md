@@ -66,10 +66,10 @@ python -m test_local
 
 ```sh
 # create repo
-terraform -chdir=infra apply -target=aws_ecr_repository.inference
+terraform -chdir=infra apply -target=aws_ecr_repository.lambda
 
-terraform -chdir=infra output -raw ecr_inference_repo
-# 099139718958.dkr.ecr.ca-central-1.amazonaws.com/sagemaker-yolo-inference
+terraform -chdir=infra output -raw ecr_lambda_repo
+# 099139718958.dkr.ecr.ca-central-1.amazonaws.com/sagemaker-yolo-lambda
 ```
 
 ---
@@ -77,9 +77,9 @@ terraform -chdir=infra output -raw ecr_inference_repo
 ### Build
 
 ```sh
-docker build -t yolo-inference lambda/
+docker build -t yolo-lambda lambda/
 
-docker images yolo-inference --format "{{.Size}}"
+docker images yolo-lambda --format "{{.Size}}"
 # 826MB
 
 ```
@@ -91,10 +91,10 @@ docker images yolo-inference --format "{{.Size}}"
 aws ecr get-login-password --region ca-central-1 | docker login --username AWS --password-stdin 099139718958.dkr.ecr.ca-central-1.amazonaws.com
 
 # build + push:
-docker buildx build --platform linux/amd64 --provenance=false --sbom=false --output "type=image,name=099139718958.dkr.ecr.ca-central-1.amazonaws.com/sagemaker-yolo-inference:latest,oci-mediatypes=false,push=true" ./lambda/
+docker buildx build --platform linux/amd64 --provenance=false --sbom=false --output "type=image,name=099139718958.dkr.ecr.ca-central-1.amazonaws.com/sagemaker-yolo-lambda:latest,oci-mediatypes=false,push=true" ./lambda/
 
 # Confirm the media type before applying
-aws ecr batch-get-image --repository-name sagemaker-yolo-inference --region ca-central-1 --image-ids imageTag=latest   --query "images[0].imageManifest" --output text
+aws ecr batch-get-image --repository-name sagemaker-yolo-lambda --region ca-central-1 --image-ids imageTag=latest   --query "images[0].imageManifest" --output text
 # {
 #   "schemaVersion": 2,
 #   "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
