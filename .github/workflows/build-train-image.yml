@@ -1,0 +1,82 @@
+# Builds the Sagemaker train image.
+name: build train image
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - train/Dockerfile
+      - .github/workflows/build-train-image.yml
+  workflow_dispatch:
+
+concurrency:
+  group: build-train-image-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AWS_REGION: ca-central-1
+  PROJECT: sagemaker-yolo
+  # Deep Learning Container image id
+  DLC_ACCOUNT: "763104351884"
+
+permissions:
+  contents: read
+  id-token: write # required to request the OIDC token
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Reclaim disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo rm -rf /usr/local/share/boost "$AGENT_TOOLSDIRECTORY"
+          df -h /
+
+      - name: Configure AWS credential
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Look up account id
+        id: acct
+        run: echo "id=$(aws sts get-caller-identity --query Account --output text)" >> "$GITHUB_OUTPUT"
+
+      - name: Login AWS
+        uses: aws-actions/amazon-ecr-login@v2
+        id: ecr
+        with:
+          registries: ${{ steps.acct.outputs.id }},${{ env.DLC_ACCOUNT }}
+
+      - name: Setup buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: train
+          push: true
+          platforms: linux/amd64
+          provenance: false
+          sbom: false
+          tags: |
+            ${{ steps.acct.outputs.id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.PROJECT }}-train:${{ github.sha }}
+            ${{ steps.acct.outputs.id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.PROJECT }}-train:latest
+          cache-from: type=gha,scope=train
+          cache-to: type=gha,scope=train,mode=max
+
+      - name: Summary
+        env:
+          IMAGE: ${{ steps.acct.outputs.id }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.PROJECT }}-train:${{ github.sha }}
+        run: |
+          {
+            echo "### Training image"
+            echo '```'
+            echo "$IMAGE"
+            echo '```'
+            echo "Pass this to the pipeline as --train-image."
+          } >> "$GITHUB_STEP_SUMMARY"
