@@ -51,7 +51,7 @@ jobs:
           provenance: false
           sbom: false
           tags: |
-            ${{ steps.ecr.outputs.registry }}/${{ env.PROJECT }}-predict:${{ github.sha }}
-            ${{ steps.ecr.outputs.registry }}/${{ env.PROJECT }}-predict:latest
-          cache-from: type=gha,scope=predict
-          cache-to: type=gha,scope=predict,mode=max
+            ${{ steps.ecr.outputs.registry }}/${{ env.PROJECT }}-lambda:${{ github.sha }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.PROJECT }}-lambda:latest
+          cache-from: type=gha,scope=lambda
+          cache-to: type=gha,scope=lambda,mode=max
