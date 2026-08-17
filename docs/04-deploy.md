@@ -11,6 +11,7 @@
   - [Push to ECR](#push-to-ecr)
   - [Apply](#apply)
   - [Deploy Webapp](#deploy-webapp)
+  - [Monitoring](#monitoring)
 
 ---
 
@@ -134,3 +135,15 @@ aws cloudfront list-distributions --query "DistributionList.Items[?Comment=='sag
 
 aws cloudfront create-invalidation --distribution-id E206WB8MR0QEBS --paths "/*"
 ```
+
+---
+
+## Monitoring
+
+- Monitoring dashboard
+
+![app_monitor01](./img/app_monitor01.png)
+
+- Budget
+
+![app_budget01](./img/app_budget01.png)
