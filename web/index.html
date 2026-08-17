@@ -119,6 +119,8 @@
               </div>
             </div>
 
+            <button id="detectBtn" class="btn btn-primary btn-lg w-100 mt-3" disabled>Detect</button>
+
             <div id="results" class="table-responsive mt-4" hidden>
               <table class="table table-sm table-borderless align-middle mb-0">
                 <thead>
@@ -133,7 +135,7 @@
               </table>
             </div>
 
-            <button id="detectBtn" class="btn btn-primary btn-lg w-100" disabled>Detect</button>
+            <p id="message" class="small text-secondary text-center mt-3 mb-0"></p>
 
             <div id="stage" class="detect-stage mt-4">
               <p id="placeholder" class="detect-placeholder mb-0">
@@ -141,9 +143,6 @@
               </p>
               <canvas id="canvas"></canvas>
             </div>
-
-            <hr class="border-secondary opacity-25">
-            <p id="message" class="small text-secondary text-center mb-0"></p>
           </div>
         </div>
       </div>
