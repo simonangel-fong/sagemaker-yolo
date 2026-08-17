@@ -120,7 +120,7 @@ Low GPU utilisation indicates the run is input-bound rather than compute-bound â
 1. **Promote the model** â€” approve a version in the `sagemaker-yolo` model package group.
 2. **Serve** the approved model from a `SageMaker` serverless endpoint, so idle time costs nothing.
 3. **Integrate** the endpoint with the web application through the `Lambda` proxy behind `CloudFront`.
-4. **Monitor** application performance metrics with `Cloudwatch Dashboard` and cost with `AWS Budgets`.
+4. **Monitor** application performance metrics with `Cloudwatch Dashboard` and costs with `AWS Budgets`.
 
 - **Performance metrics**
 
