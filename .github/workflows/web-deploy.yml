@@ -97,16 +97,23 @@ jobs:
 
           terraform -chdir=infra show -no-color tfplan > plan.txt
 
+      # A push to master is a deploy: it applies. workflow_dispatch stays
+      # opt-in so a manual run can be a plan-only dry run.
       - name: Terraform apply
         id: apply
-        if: github.event_name == 'workflow_dispatch' && inputs.action == 'apply'
+        if: |
+          steps.plan.outputs.changes == 'true' &&
+          (github.event_name == 'push' ||
+           (github.event_name == 'workflow_dispatch' && inputs.action == 'apply'))
         run: terraform -chdir=infra apply -input=false tfplan
 
       # The distribution is not exported as an output, so it is looked up by the
       # comment terraform sets on it: "<project>-<env> yolo web app".
       - name: Invalidate CloudFront
         id: invalidate
-        if: steps.apply.outcome == 'success' && steps.plan.outputs.changes == 'true'
+        # outcome is 'skipped' when apply did not run, so this fires only after
+        # objects were actually uploaded.
+        if: steps.apply.outcome == 'success'
         run: |
           set -euo pipefail
 

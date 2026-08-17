@@ -287,34 +287,27 @@
           </div>
 
           <p class="statement">
-            The GPU instance costs ~3x more per hour but finishes ~13x faster, so the run
-            is roughly <em>13x cheaper</em> overall.
+            The GPU instance costs ~3x per hour but finishes ~11x faster, so the run
+            is roughly <em>~12x cheaper</em> overall.
           </p>
 
           <div class="row g-4 mt-1">
-            <div class="col-lg-6">
+            <div class="col-lg-12">
               <figure class="figure-framed mb-0">
                 <img src="img/cpu_vs_gpu01.png" loading="lazy"
                   alt="Training time comparison: 27.8 minutes on CPU versus 2.2 minutes on GPU">
               </figure>
               <p class="figure-caption-sm">Train time — cpu <code>27.8m</code> vs gpu <code>2.2m</code></p>
             </div>
-            <div class="col-lg-6">
+            <div class="col-lg-12">
               <figure class="figure-framed mb-0">
                 <img src="img/cpu_vs_gpu02.png" loading="lazy"
                   alt="Resource utilisation comparison between the CPU and GPU training runs">
               </figure>
-              <p class="figure-caption-sm">
+              <p class="figure-caption-sm mx-auto">
                 Resource use — cpu run (blue) ~75% cpu; gpu run (red) ~75% cpu, ~15% gpu
               </p>
             </div>
-          </div>
-
-          <div class="callout mt-4">
-            <p class="mb-0 text-secondary">
-              Low GPU utilisation indicates the run is <em>input-bound</em> rather than
-              compute-bound — headroom for a larger batch or faster data loading.
-            </p>
           </div>
         </div>
       </div>
@@ -356,15 +349,11 @@
   <!-- ===== footer ===== -->
   <footer class="site-footer">
     <div class="container">
-      <div class="row gy-3 align-items-center">
-        <div class="col-md-6">
-          <strong class="d-block text-body">Arguswatcher</strong>@2026
-        </div>
-        <div class="col-md-6 text-md-end">
-          <a href="https://trip-ml.arguswatcher.net/" target="_blank" rel="noopener" class="me-3">Shared Bike ML
-            project</a>
-          <a href="https://github.com/simonangel-fong/sagemaker-yolo" target="_blank" rel="noopener">GitHub</a>
-        </div>
+      <div class="footer-bar">
+        <span>
+          <a href="https://www.arguswatcher.net/">Arguswatcher</a> &copy; 2026
+        </span>
+        <a href="#top">Back to top</a>
       </div>
     </div>
   </footer>
