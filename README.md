@@ -22,7 +22,9 @@ Computer vision models like `YOLO` are popular for object detection in manufactu
 
 > However, integrating these computer vision models reliably into business applications remains a significant challenge.
 
-This project demonstrates an end-to-end MLOps workflow by training, deploying, and serving a `YOLO` model that detects vehicle license plates.
+This project demonstrates an end-to-end MLOps workflow by **training**, **deploying**, and **serving** a `YOLO` model that **detects vehicle license plates**.
+
+![app01](./docs/img/app01.png)
 
 ---
 
