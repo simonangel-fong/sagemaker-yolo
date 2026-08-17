@@ -38,6 +38,15 @@ locals {
   web_model_name   = local.prefix_name
   web_allow_origin = "*"
 
+  # Monitoring
+  monitoring_log_retention_days = 14
+  alarm_endpoint_latency_ms     = 10000
+  alarm_lambda_duration_ms      = 25000
+  alarm_lambda_invocations_5min = 500
+
+  # finops
+  fin_monthly_budget_usd = 10
+
   # acm
   acm_certificate_domain = "*.arguswatcher.net"
 

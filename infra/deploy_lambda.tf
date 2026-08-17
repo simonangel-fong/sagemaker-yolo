@@ -90,14 +90,6 @@ resource "aws_lambda_function" "lambda" {
   tags = local.default_tags
 }
 
-resource "aws_cloudwatch_log_group" "lambda" {
-  count = var.enable_deploy ? 1 : 0
-
-  name              = "/aws/lambda/${aws_lambda_function.lambda[0].function_name}"
-  retention_in_days = 14
-  tags              = local.default_tags
-}
-
 # ##############################
 # Function URL
 # ##############################

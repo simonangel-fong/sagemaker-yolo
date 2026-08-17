@@ -45,6 +45,10 @@ resource "aws_sagemaker_endpoint_configuration" "yolo" {
     }
   }
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   tags = local.default_tags
 }
 

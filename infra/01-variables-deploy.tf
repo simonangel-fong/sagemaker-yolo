@@ -44,3 +44,12 @@ variable "cloudflare_zone_id" {
   description = "Cloudflare zone id for the domain's root zone."
   type        = string
 }
+
+# ##############################
+# Monitoring
+# ##############################
+variable "alert_email" {
+  description = "Address subscribed to the alarm topic."
+  type        = string
+}
+

@@ -1,0 +1,6 @@
+[
+ {"Id":"inv","MetricStat":{"Metric":{"Namespace":"AWS/SageMaker","MetricName":"Invocations","Dimensions":[{"Name":"EndpointName","Value":"sagemaker-yolo-dev"},{"Name":"VariantName","Value":"AllTraffic"}]},"Period":300,"Stat":"Sum"}},
+ {"Id":"e4","MetricStat":{"Metric":{"Namespace":"AWS/SageMaker","MetricName":"Invocation4XXErrors","Dimensions":[{"Name":"EndpointName","Value":"sagemaker-yolo-dev"},{"Name":"VariantName","Value":"AllTraffic"}]},"Period":300,"Stat":"Sum"}},
+ {"Id":"e5","MetricStat":{"Metric":{"Namespace":"AWS/SageMaker","MetricName":"Invocation5XXErrors","Dimensions":[{"Name":"EndpointName","Value":"sagemaker-yolo-dev"},{"Name":"VariantName","Value":"AllTraffic"}]},"Period":300,"Stat":"Sum"}},
+ {"Id":"conc","MetricStat":{"Metric":{"Namespace":"AWS/SageMaker","MetricName":"ServerlessConcurrentExecutionsUtilization","Dimensions":[{"Name":"EndpointName","Value":"sagemaker-yolo-dev"},{"Name":"VariantName","Value":"AllTraffic"}]},"Period":300,"Stat":"Maximum"}}
+]
