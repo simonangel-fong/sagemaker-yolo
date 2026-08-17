@@ -123,6 +123,7 @@ means the edges are serving the new files.
 | ENABLE_EXPERIMENT         | whteher enable experiment          |
 | ECR_TRAIN_URL             | ECR url for train image            |
 | ECR_LAMBDA_URL            | ECR url for lambda image           |
+| ALERT_EMAIL               | Alert email                        |
 
 | Secrets              | Description          |
 | -------------------- | -------------------- |
@@ -160,6 +161,7 @@ gh variable set VPC_ID --body "<vpc_id>"
 gh variable set PUBLIC_SUBNET_ID --body "<subnect_id>"
 gh variable set ENABLE_DEPLOY --body "false"
 gh variable set ENABLE_EXPERIMENT --body "false"
+gh variable set ALERT_EMAIL --body "tech.arguswatcher@gmail.com"
 
 gh secret set CLOUDFLARE_API_TOKEN --body "<api_token>"
 gh secret set CLOUDFLARE_ZONE_ID --body "<zone_id>"
