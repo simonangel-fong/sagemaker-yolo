@@ -10,6 +10,7 @@
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
     integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+  <link rel="preload" as="image" href="img/bg.jpg">
   <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -19,7 +20,7 @@
   <nav class="navbar navbar-expand-lg fixed-top">
     <div class="container">
       <a class="navbar-brand d-flex align-items-center gap-2" href="https://yolo.arguswatcher.net">
-        <img src="img/plate.png" alt="" class="brand-mark" width="32" height="30">
+        <img src="img/logo.png" alt="" class="brand-mark" width="32" height="30">
         <span>Car Plate Detection</span>
       </a>
 
@@ -43,16 +44,16 @@
   <!-- ===== hero ===== -->
   <header class="hero">
     <div class="container">
-      <div class="row justify-content-center text-center">
-        <div class="col-12 col-sm-10">
-          <h3 class="hero-title mb-4">License Plate Recognition MLOps</h3>
+      <div class="row">
+        <div class="col-12 col-lg-7 col-xl-6 hero-copy">
           <p class="hero-subtitle mb-3">End-to-end MLOps workflow</p>
-          <p class="hero-lead mx-auto mb-5">
+          <h3 class="hero-title mb-4">License Plate Recognition MLOps</h3>
+          <p class="hero-lead mb-5">
             An <code>Amazon SageMaker</code> project that trains and deploys a <code>YOLO</code>
             object-detection model through a full MLOps workflow — from labelled images to a
             serverless inference endpoint behind a public web app.
           </p>
-          <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+          <div class="d-flex flex-column flex-sm-row gap-3">
             <a href="#detect" class="btn btn-light btn-lg px-4">Try the model</a>
             <a href="https://github.com/simonangel-fong/sagemaker-yolo" target="_blank" rel="noopener"
               class="btn btn-outline-light btn-lg px-4">GitHub Repository</a>
@@ -83,13 +84,6 @@
             This project demonstrates an end-to-end MLOps workflow by training, deploying,
             and serving a <code>YOLO</code> model that detects vehicle license plates.
           </p>
-
-          <div class="callout">
-            <p class="mb-0 text-secondary">
-              OCR is out of scope — the model detects plate <em>regions</em>, it does not
-              read them.
-            </p>
-          </div>
         </div>
       </div>
     </div>
@@ -102,8 +96,7 @@
         <div class="col-lg-9 text-center mb-4">
           <h1 class="section-title">License Plate Recognition</h1>
           <p class="text-secondary fs-4">
-            The deployed model, served from a <code>SageMaker</code> serverless endpoint
-            through a <code>Lambda</code> proxy. Pick an image and run detection.
+            Pick an image and run detection.
           </p>
           <span id="status" class="status-badge">checking model…</span>
         </div>
@@ -111,9 +104,9 @@
 
       <div class="row justify-content-center">
         <div class="col-lg-9">
-          <div class="detect-card p-4 p-md-5">
+          <div class="detect-card p-4 p-md-4">
 
-            <div class="row g-3 align-items-end mb-4">
+            <div class="row g-3 align-items-end mb-1">
               <div class="col-sm-6">
                 <label for="file" class="form-label small text-secondary">Image</label>
                 <input type="file" id="file" class="form-control" accept="image/jpeg,image/png">
@@ -124,15 +117,6 @@
                 </label>
                 <input type="range" id="conf" class="form-range" min="0.05" max="0.95" step="0.05" value="0.25">
               </div>
-            </div>
-
-            <button id="detectBtn" class="btn btn-primary btn-lg w-100" disabled>Detect</button>
-
-            <div id="stage" class="detect-stage mt-4">
-              <p id="placeholder" class="detect-placeholder mb-0">
-                Your detection will appear here.
-              </p>
-              <canvas id="canvas"></canvas>
             </div>
 
             <div id="results" class="table-responsive mt-4" hidden>
@@ -147,6 +131,15 @@
                 </thead>
                 <tbody id="rows"></tbody>
               </table>
+            </div>
+
+            <button id="detectBtn" class="btn btn-primary btn-lg w-100" disabled>Detect</button>
+
+            <div id="stage" class="detect-stage mt-4">
+              <p id="placeholder" class="detect-placeholder mb-0">
+                Your detection will appear here.
+              </p>
+              <canvas id="canvas"></canvas>
             </div>
 
             <hr class="border-secondary opacity-25">

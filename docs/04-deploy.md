@@ -129,5 +129,8 @@ curl https://yolo.arguswatcher.net/v1/models/yolo-car-plate
 ## Deploy Webapp
 
 ```sh
+aws cloudfront list-distributions --query "DistributionList.Items[?Comment=='sagemaker-yolo-dev yolo web app'].Id | [0]" --output text
+# E206WB8MR0QEBS
 
+aws cloudfront create-invalidation --distribution-id E206WB8MR0QEBS --paths "/*"
 ```
