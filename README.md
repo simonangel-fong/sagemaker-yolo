@@ -12,6 +12,7 @@ An `Amazon SageMaker` project that trains and deploys an object detection model 
     - [`Jupyter notebook` \& `MLflow`](#jupyter-notebook--mlflow)
     - [Comparison: `cpu` vs `gpu`](#comparison-cpu-vs-gpu)
   - [Inference deployment](#inference-deployment)
+  - [Road Map - Further features](#road-map---further-features)
   - [Documentation](#documentation)
 
 ---
@@ -129,6 +130,16 @@ Low GPU utilisation indicates the run is input-bound rather than compute-bound â
 - **Budgets**
 
 ![app_budget01](./docs/img/app_budget01.png)
+
+---
+
+## Road Map - Further features
+
+| Feature                  | Goal                                                            | Approach                                                                                                |
+| ------------------------ | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Plate OCR**            | Read the plate text, not just locate the plate.                 | Crop the detected box and run a text recognition model as a second stage.                               |
+| **Automated retraining** | Keep the model fresh without manual runs.                       | Trigger the `SageMaker pipeline` when new labelled data lands in `S3`; watch for drift on the endpoint. |
+| **Video & batch input**  | Process a video or a folder of images, not one image at a time. | Add an `S3`-upload-triggered batch path alongside the existing real-time endpoint.                      |
 
 ---
 
