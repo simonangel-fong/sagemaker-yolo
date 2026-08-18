@@ -26,7 +26,7 @@ CLASSES = json.loads(os.environ.get("CLASSES", '["car_plate"]'))
 ALLOW_ORIGIN = os.environ.get("ALLOW_ORIGIN", "*")
 
 # Max request size: serverless SageMaker 6MB
-MAX_B64_BYTES = 6 * 1024 * 1024
+MAX_B64_BYTES = 4 * 1024 * 1024
 
 runtime = boto3.client("sagemaker-runtime")
 

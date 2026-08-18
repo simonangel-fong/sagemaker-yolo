@@ -1,0 +1,33 @@
+# Run the load tests
+#     docker compose -f k6/docker-compose.yml run --rm prepare
+#     docker compose -f k6/docker-compose.yml run --rm smoke
+
+services:
+  prepare:
+    image: node:24-alpine
+    volumes:
+      - ./script:/script:ro
+      - ./data:/output
+      - ../data:/input:ro
+    environment:
+      SRC: ${SRC:-/input/raw}
+      OUT: ${OUT:-/output/corpus.json}
+      COUNT: ${COUNT:-30}
+    entrypoint: ["node", "/script/prepare-images.js"]
+    command: []
+
+  smoke:
+    image: grafana/k6:latest
+    volumes:
+      - ./script:/script:ro
+      - ./data:/corpus:ro
+    environment:
+      BASE_URL: ${BASE_URL:-https://yolo.arguswatcher.net}
+      MODEL: ${MODEL:-sagemaker-yolo}
+      CONF: ${CONF:-0.25}
+      ITERATIONS: ${ITERATIONS:-50}
+      TIMEOUT: ${TIMEOUT:-120s}
+      CORPUS: ${CORPUS:-/corpus/corpus.json}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: ["run", "/script/smoke.js"]

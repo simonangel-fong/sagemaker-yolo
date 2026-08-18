@@ -238,4 +238,7 @@ wandb/
 
 # local docker test fixture (see docs/pipeline.md)
 train/.local/
+*.pptx
 
+# generated base64 corpus for the load tests (see k6/README.md)
+k6/data/
