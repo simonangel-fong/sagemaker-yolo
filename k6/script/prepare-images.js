@@ -30,10 +30,10 @@ const DEFAULT_OUT = process.env.OUT || join(K6, "data", "corpus.json");
 // data/raw holds a .txt label file beside every image; those are not payloads.
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png"]);
 
-// app.py rejects a body over 6 MB of base64 with a 413 before it reaches
-// SageMaker, so those images are dropped here -- a load test that bakes in
-// guaranteed 413s measures nothing useful.
-const MAX_B64_BYTES = 6 * 1024 * 1024;
+// Serverless SageMaker caps the InvokeEndpoint payload at 4 MB, and app.py
+// rejects anything larger with a 413. Keep this in step with MAX_BODY_BYTES
+// there -- a load test that bakes in guaranteed failures measures nothing.
+const MAX_B64_BYTES = 4 * 1024 * 1024;
 
 // All 556 images would be several hundred MB of base64 held in memory by k6.
 const DEFAULT_COUNT = 30;

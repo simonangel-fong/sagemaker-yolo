@@ -14,8 +14,6 @@ locals {
     ".mp4"  = "video/mp4"
   }
 
-  # An extension must appear in both this fileset and s3_content_types above,
-  # or the object either never uploads or is served as octet-stream.
   s3_web_files = fileset("${path.module}/../web", "**/*.{html,css,js,png,jpg,jpeg,gif,svg,ico,mp4}")
 }
 
@@ -26,8 +24,6 @@ resource "aws_s3_object" "web" {
   bucket = aws_s3_bucket.yolo.id
   key    = "web/${each.value}"
   source = "${path.module}/../web/${each.value}"
-  # source_hash, not etag: etag is computed from what S3 returns, so a changed
-  # file body alone does not reliably produce a diff and the upload is skipped.
   source_hash  = filemd5("${path.module}/../web/${each.value}")
   content_type = lookup(local.s3_content_types, regex("\\.[^.]+$", each.value), "application/octet-stream")
 }

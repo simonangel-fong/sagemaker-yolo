@@ -35,7 +35,10 @@ export const options = {
   thresholds: {
     http_req_failed: ["rate==0"],
     checks: ["rate==1"],
-    plate_detected: ["rate>0.8"],
+    // >= not >: at exactly 80% the run should pass, which is what "most
+    // images must yield a detection" means. Strict > also makes small runs
+    // unpassable -- 4/5 is 0.8 exactly.
+    plate_detected: ["rate>=0.8"],
   },
 };
 

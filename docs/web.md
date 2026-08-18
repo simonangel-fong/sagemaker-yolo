@@ -73,7 +73,7 @@ part of the page.
   - message line: filename, dimensions, detection count, elapsed ms, errors
 - request: `POST /v1/models/{model}:predict` with
   `{instances:[{image:{b64}, conf}]}`
-- limit: 6 MB base64 — the serverless endpoint's request cap.
+- limit: 4 MB encoded request body — the serverless endpoint's request cap.
 
 ---
 

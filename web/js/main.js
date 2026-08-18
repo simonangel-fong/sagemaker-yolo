@@ -7,9 +7,10 @@ const MODEL = "sagemaker-yolo";
 const READY_URL = `/v1/models/${MODEL}`;
 const PREDICT_URL = `/v1/models/${MODEL}:predict`;
 
-// The endpoint caps a request at 6 MB of base64, which is ~4.5 MB of file.
-// Catching it here gives a clearer message than a 413 from the proxy.
-const MAX_FILE_BYTES = 4.5 * 1024 * 1024;
+// The endpoint caps a request at 4 MB encoded, and base64 inflates by 4/3, so
+// the file itself must stay under ~3 MB. Catching it here gives a clearer
+// message than a 413 from the proxy.
+const MAX_FILE_BYTES = 3 * 1024 * 1024;
 
 const els = {
   status: document.getElementById("status"),

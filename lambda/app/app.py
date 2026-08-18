@@ -25,8 +25,10 @@ IMGSZ = int(os.environ.get("IMGSZ", "640"))
 CLASSES = json.loads(os.environ.get("CLASSES", '["car_plate"]'))
 ALLOW_ORIGIN = os.environ.get("ALLOW_ORIGIN", "*")
 
-# Max request size: serverless SageMaker 6MB
-MAX_B64_BYTES = 4 * 1024 * 1024
+# Serverless SageMaker caps the InvokeEndpoint payload at 4 MB. This bounds the
+# whole request body sent below, not just the base64 field, so the check cannot
+# pass an image that the endpoint then rejects as oversize.
+MAX_BODY_BYTES = 4 * 1024 * 1024
 
 runtime = boto3.client("sagemaker-runtime")
 
@@ -81,12 +83,17 @@ def predict(model: str, body: PredictRequest) -> dict:
     instance = body.instances[0]
     b64 = instance.image.b64
 
-    if len(b64) > MAX_B64_BYTES:
+    # Measure the encoded payload rather than len(b64): the JSON envelope adds
+    # bytes, and len() on a str counts characters, which undercounts non-ASCII.
+    payload = json.dumps({"image": b64}).encode()
+
+    if len(payload) > MAX_BODY_BYTES:
         raise HTTPException(
             status_code=413,
             detail=(
-                f"image is {len(b64) / 1024 / 1024:.1f} MB base64, over the "
-                f"{MAX_B64_BYTES / 1024 / 1024:.0f} MB limit -- resize before sending"
+                f"image is {len(payload) / 1024 / 1024:.1f} MB encoded, over the "
+                f"{MAX_BODY_BYTES / 1024 / 1024:.0f} MB serverless endpoint limit "
+                f"-- resize before sending"
             ),
         )
 
@@ -95,7 +102,7 @@ def predict(model: str, body: PredictRequest) -> dict:
             EndpointName=ENDPOINT,
             ContentType="application/json",
             Accept="application/json",
-            Body=json.dumps({"image": b64}),
+            Body=payload,
         )
         result = json.loads(response["Body"].read())
     except runtime.exceptions.ModelError as err:
