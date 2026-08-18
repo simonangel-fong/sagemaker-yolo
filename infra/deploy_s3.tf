@@ -11,6 +11,7 @@ locals {
     ".gif"  = "image/gif"
     ".svg"  = "image/svg+xml"
     ".ico"  = "image/x-icon"
+    ".mp4"  = "video/mp4"
   }
 
   # An extension must appear in both this fileset and s3_content_types above,
