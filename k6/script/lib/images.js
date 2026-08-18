@@ -1,14 +1,15 @@
 import { SharedArray } from "k6/data";
 
-// Relative to k6/script/lib/, so this resolves to k6/data/ both locally and
-// under the container mount.
+// Relative to k6/script/lib/, resolving to k6/data/ locally and in the
+// container alike.
 const DEFAULT_CORPUS = "../../data/corpus.json";
 const CORPUS_PATH = __ENV.CORPUS || DEFAULT_CORPUS;
 
+// SharedArray, not a plain array: every VU would otherwise hold its own copy
+// of the whole base64 corpus.
 export const images = new SharedArray("images", function () {
   let raw;
   try {
-    // open() is init-context only, which is exactly where SharedArray runs.
     raw = open(CORPUS_PATH);
   } catch (err) {
     throw new Error(

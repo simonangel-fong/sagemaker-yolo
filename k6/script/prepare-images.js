@@ -2,9 +2,8 @@
 // Usage:
 //     node k6/script/prepare-images.js [--count N] [--out PATH] [--src DIR]
 //
-// SRC/OUT/COUNT are honoured as environment variables too, so the container
-// can be pointed at its mounts without baking paths into the entrypoint.
-// Precedence: flag > env var > location-relative default.
+// SRC/OUT/COUNT work as environment variables too, which is how the container
+// points at its mounts. Precedence: flag > env var > default.
 
 import { createHash } from "node:crypto";
 import {
@@ -21,18 +20,15 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const K6 = resolve(HERE, "..");
 const REPO = resolve(HERE, "..", "..");
 
-// Location-relative defaults, used when neither a flag nor an env var is set.
-// Corpus lives in k6/data/, not k6/script/ -- generated data stays out of the
-// source tree.
+// Corpus lives in k6/data/, keeping generated data out of the source tree.
 const DEFAULT_SRC = process.env.SRC || join(REPO, "data", "raw");
 const DEFAULT_OUT = process.env.OUT || join(K6, "data", "corpus.json");
 
 // data/raw holds a .txt label file beside every image; those are not payloads.
 const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png"]);
 
-// Serverless SageMaker caps the InvokeEndpoint payload at 4 MB, and app.py
-// rejects anything larger with a 413. Keep this in step with MAX_BODY_BYTES
-// there -- a load test that bakes in guaranteed failures measures nothing.
+// Serverless SageMaker caps the payload at 4 MB. Keep in step with
+// MAX_BODY_BYTES in app.py -- baking in guaranteed 413s measures nothing.
 const MAX_B64_BYTES = 4 * 1024 * 1024;
 
 // All 556 images would be several hundred MB of base64 held in memory by k6.
@@ -49,8 +45,8 @@ function parseCount(value, label) {
 }
 
 function parseArgs(argv) {
-  // Env vars are read here rather than at module scope so a bad value surfaces
-  // through main()'s error handler instead of as an unhandled throw.
+  // Read here, not at module scope, so a bad value surfaces through main()'s
+  // error handler instead of as an unhandled throw.
   const args = {
     count: parseCount(process.env.COUNT, "COUNT") ?? DEFAULT_COUNT,
     out: DEFAULT_OUT,

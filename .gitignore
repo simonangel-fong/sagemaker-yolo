@@ -240,5 +240,6 @@ wandb/
 train/.local/
 *.pptx
 
-# generated base64 corpus for the load tests (see k6/README.md)
+# generated base64 corpus and run reports for the load tests (see docs/06-k6.md)
 k6/data/
+k6/reports/

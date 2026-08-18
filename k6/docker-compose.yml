@@ -1,6 +1,8 @@
 # Run the load tests
 #     docker compose -f k6/docker-compose.yml run --rm prepare
-#     docker compose -f k6/docker-compose.yml run --rm smoke
+#     docker compose -f k6/docker-compose.yml run --rm k6 [scenario.js]
+#
+# The scenario is an argument, so a new script/*.js needs no change here.
 
 services:
   prepare:
@@ -16,18 +18,55 @@ services:
     entrypoint: ["node", "/script/prepare-images.js"]
     command: []
 
-  smoke:
+  k6:
     image: grafana/k6:latest
     volumes:
       - ./script:/script:ro
       - ./data:/corpus:ro
+      # Writable: the reports are written here.
+      - ./reports:/reports
     environment:
       BASE_URL: ${BASE_URL:-https://yolo.arguswatcher.net}
       MODEL: ${MODEL:-sagemaker-yolo}
       CONF: ${CONF:-0.25}
-      ITERATIONS: ${ITERATIONS:-50}
+      # smoke.js
+      RATE: ${RATE:-1}
+      DURATION: ${DURATION:-1m}
+      # load.js -- steps 1..MAX, holding STEP_DURATION at each.
+      MAX: ${MAX:-20}
+      STEPS: ${STEPS:-5}
+      STEP_DURATION: ${STEP_DURATION:-30s}
+      RAMP: ${RAMP:-10s}
       TIMEOUT: ${TIMEOUT:-120s}
       CORPUS: ${CORPUS:-/corpus/corpus.json}
+      # Set here, not as `-e` on the command line: Git Bash rewrites a
+      # /reports/... value into C:/Program Files/Git/... before Docker sees it.
+      K6_WEB_DASHBOARD: "true"
+      K6_WEB_DASHBOARD_PERIOD: ${DASHBOARD_PERIOD:-1s}
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    command: ["run", "/script/smoke.js"]
+    # Report names derive from the script, which compose cannot do on its own:
+    # ${} interpolation runs before the argument exists. Every $ is doubled --
+    # compose eats a single $, so $$name reaches the shell as $name.
+    entrypoint:
+      - "sh"
+      - "-c"
+      - |
+        name="$$(basename "$${1:-smoke.js}" .js)"
+        if [ ! -f "/script/$$name.js" ]; then
+          echo "no such scenario: /script/$$name.js" >&2
+          echo "available:" >&2
+          # prepare-images.js is the Node pre-step, not a scenario.
+          ls /script/*.js 2>/dev/null \
+            | grep -v prepare-images \
+            | sed 's|/script/|  |' >&2
+          exit 1
+        fi
+        export K6_WEB_DASHBOARD_EXPORT="/reports/$$name-report.html"
+        exec k6 run \
+          --summary-mode=full \
+          --summary-export="/reports/$$name-summary.json" \
+          "/script/$$name.js"
+      # $0 for the -c script, so the scenario argument lands in $1.
+      - "sh"
+    command: ["smoke.js"]
