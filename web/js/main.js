@@ -17,6 +17,7 @@ const els = {
   conf: document.getElementById("conf"),
   confOut: document.getElementById("confOut"),
   detect: document.getElementById("detectBtn"),
+  reset: document.getElementById("resetBtn"),
   message: document.getElementById("message"),
   stage: document.getElementById("stage"),
   placeholder: document.getElementById("placeholder"),
@@ -63,6 +64,7 @@ els.file.addEventListener("change", () => {
 
   if (file.size > MAX_FILE_BYTES) {
     els.detect.disabled = true;
+    els.reset.disabled = false;
     say(`${file.name} is ${(file.size / 1024 / 1024).toFixed(1)} MB — resize below `
       + `${(MAX_FILE_BYTES / 1024 / 1024).toFixed(1)} MB before sending`, true);
     return;
@@ -77,6 +79,7 @@ els.file.addEventListener("change", () => {
     image.onload = () => {
       draw([]);
       els.detect.disabled = false;
+      els.reset.disabled = false;
       els.results.hidden = true;
       say(`${file.name} · ${image.naturalWidth}x${image.naturalHeight}`);
     };
@@ -87,6 +90,28 @@ els.file.addEventListener("change", () => {
 
 els.conf.addEventListener("input", () => {
   els.confOut.textContent = Number(els.conf.value).toFixed(2);
+});
+
+// Return the widget to its just-loaded state. The confidence slider is left
+// alone -- it's a setting the user chose, not part of the current image.
+els.reset.addEventListener("click", () => {
+  image = null;
+  imageB64 = null;
+
+  // Clearing .value lets the same file be picked again and still fire "change".
+  els.file.value = "";
+  els.detect.disabled = true;
+  els.reset.disabled = true;
+
+  ctx.clearRect(0, 0, els.canvas.width, els.canvas.height);
+  els.canvas.width = els.canvas.height = 0;
+  els.canvas.classList.remove("loaded");
+  els.stage.classList.remove("loaded");
+  els.placeholder.hidden = false;
+
+  els.results.hidden = true;
+  els.rows.replaceChildren();
+  say("");
 });
 
 // --- drawing --------------------------------------------------------------
@@ -158,6 +183,7 @@ els.detect.addEventListener("click", async () => {
   if (!imageB64) return;
 
   els.detect.disabled = true;
+  els.reset.disabled = true;
   say("detecting…");
   const started = performance.now();
 
@@ -193,6 +219,7 @@ els.detect.addEventListener("click", async () => {
     say(err.message, true);
   } finally {
     els.detect.disabled = false;
+    els.reset.disabled = false;
   }
 });
 
