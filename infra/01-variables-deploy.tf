@@ -32,8 +32,6 @@ variable "lambda_image_tag" {
 # DNS
 # ##############################
 # domain name
-
-
 variable "cloudflare_api_token" {
   description = "Cloudflare token with DNS edit rights on the zone."
   type        = string
