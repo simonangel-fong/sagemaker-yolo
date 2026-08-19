@@ -127,6 +127,10 @@ Low GPU utilisation indicates the run is input-bound rather than compute-bound â
 
 ![app_monitor01](./docs/img/app_monitor01.png)
 
+- **CI/CD pipeline**
+
+![cicd_pipeline01](./docs/img/cicd_pipeline01.png)
+
 - **Budgets**
 
 ![app_budget01](./docs/img/app_budget01.png)

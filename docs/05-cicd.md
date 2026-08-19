@@ -169,3 +169,5 @@ gh secret set CLOUDFLARE_ZONE_ID --body "<zone_id>"
 ```
 
 ![cicd_pipeline01](./img/cicd_pipeline01.png)
+
+![cicd_pipeline02](./img/cicd_pipeline02.png)
