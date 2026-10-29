@@ -95,7 +95,7 @@ Train the same YOLO model with the same dataset and the same hyperparameters.
 
 | Instance              | Specification | GPU | Rate per hour($) | Total min | Total cost($) |
 | --------------------- | ------------- | --- | ---------------- | --------- | ------------- |
-| `ml.m5.xlarge(cpu)`   | 4vCPU, 16 GiB | N/A | 0.257            | 27.8      | 0.379         |
+| `ml.m5.xlarge(cpu)`   | 4vCPU, 16 GiB | N/A | 0.257            | 27.8      | 0.119         |
 | `ml.g4dn.xlarge(gpu)` | 4vCPU, 16 GiB | Yes | 0.818            | 2.2       | 0.029         |
 
 The GPU instance costs ~3x more per hour but finishes ~13x faster, so the run is roughly **13x cheaper** overall.
